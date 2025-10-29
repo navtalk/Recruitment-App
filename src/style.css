@@ -1,0 +1,28 @@
+:root {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background-color: #eef1ff;
+  color: #1f2937;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: radial-gradient(circle at 20% 20%, rgba(101, 121, 255, 0.12), transparent),
+    radial-gradient(circle at 80% 0%, rgba(155, 92, 255, 0.12), transparent), #eef1ff;
+}
+
+button {
+  font-family: inherit;
+}

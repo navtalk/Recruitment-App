@@ -1,0 +1,290 @@
+[
+  {
+    "id": "recruiter",
+    "title": "Recruiter / Talent Acquisition Partner",
+    "companyName": "Atlas People Solutions",
+    "location": "New York, NY (Hybrid)",
+    "salaryRange": "$95k - $115k base + commission",
+    "employmentType": "Full-time",
+    "summary": "Owns the full U.S. recruiting lifecycle, balancing business needs, candidate experience, and recruiting KPIs.",
+    "requirements": [
+      "3+ years of corporate recruiting experience across technical and G&A roles",
+      "Demonstrated success partnering with senior hiring managers and HRBPs",
+      "Hands-on experience with Greenhouse or Lever ATS workflows",
+      "Comfortable working in a hybrid schedule and supporting EST stakeholders",
+      "Ability to interpret funnel analytics and adjust sourcing or screening tactics accordingly",
+      "Experience driving DEI hiring initiatives and building inclusive talent pools",
+      "Strong negotiation skills when navigating offers, counteroffers, and closing timelines"
+    ],
+    "prompt": "You are Aoibheann interviewing for the Recruiter / Talent Acquisition Partner role in the United States. Conduct the entire conversation in English. Use the provided question list in order, ask one question at a time, wait for the response, acknowledge it with a short English thank-you, and keep the tone professional and neutral.",
+    "questions": [
+      {
+        "id": "recruitment-background",
+        "text": "Please give me a brief overview of your recruitment background."
+      },
+      {
+        "id": "sourcing-approach",
+        "text": "How do you approach sourcing candidates for hard-to-fill roles?"
+      },
+      {
+        "id": "hiring-manager",
+        "text": "Tell me about a time you partnered with a difficult hiring manager and earned their trust."
+      },
+      {
+        "id": "candidate-experience",
+        "text": "What steps do you take to ensure a consistent, positive candidate experience across the funnel?"
+      },
+      {
+        "id": "tools-platforms",
+        "text": "Which sourcing tools or platforms have been the most valuable for you in the U.S. market?"
+      },
+      {
+        "id": "speed-vs-quality",
+        "text": "How do you balance speed and quality when you're managing multiple requisitions?"
+      }
+    ]
+  },
+  {
+    "id": "devops",
+    "title": "DevOps Engineer",
+    "companyName": "SignalStack Cloud",
+    "location": "Austin, TX (Remote within U.S.)",
+    "salaryRange": "$130k - $155k base + equity",
+    "employmentType": "Full-time",
+    "summary": "Implements CI/CD automation, observability, and infrastructure-as-code to support reliable U.S. product delivery.",
+    "requirements": [
+      "5+ years in DevOps/SRE roles supporting production SaaS platforms",
+      "Deep knowledge of AWS (preferred) or GCP, plus Terraform or CloudFormation",
+      "Experience building CI/CD with GitHub Actions, Jenkins, or GitLab",
+      "Proficient with container orchestration (Kubernetes or ECS) and service mesh tooling",
+      "Strong observability mindset using tools like Prometheus, Grafana, Datadog, or New Relic",
+      "Knowledge of automated compliance controls (SOC 2, ISO 27001) within cloud environments"
+    ],
+    "generatedQuestionCount": 5,
+    "prompt": "You are Aoibheann interviewing for the DevOps Engineer role supporting U.S. SaaS infrastructure. Conduct the entire conversation in English. There is no preset question list; generate four to five role-specific questions that probe CI/CD automation, cloud architecture, observability, incident response, and reliability metrics. Ask one question at a time, acknowledge each answer briefly in English, and adjust follow-ups based on the candidate's responses.",
+    "questions": []
+  },
+  {
+    "id": "enterprise-ae",
+    "title": "Enterprise Account Executive",
+    "companyName": "Northstar Analytics",
+    "location": "San Francisco, CA (Hybrid)",
+    "salaryRange": "$120k base + OTE up to $260k",
+    "employmentType": "Full-time",
+    "summary": "Owns complex U.S. enterprise sales cycles, from prospecting and discovery through negotiation and expansion.",
+    "requirements": [
+      "7+ years closing $250k+ ARR SaaS deals in regulated industries",
+      "Proven experience running MEDDICC or similar enterprise sales methodologies",
+      "History of 120%+ quota attainment with accurate forecasting",
+      "Ability to collaborate with solutions engineering and legal on complex contracts",
+      "Demonstrated success navigating lengthy procurement cycles and vendor due diligence",
+      "Skilled at building executive-level business cases tied to ROI and risk reduction",
+      "Experience mentoring SDRs or AEs on complex deal strategy and discovery"
+    ],
+    "generatedQuestionCount": 5,
+    "prompt": "You are Aoibheann interviewing for the Enterprise Account Executive role focused on U.S. regulated industries. Conduct the entire conversation in English. There is no preset question list; generate four to five questions covering pipeline generation, discovery, deal strategy, stakeholder alignment, negotiation, and forecasting discipline. Ask one question at a time, acknowledge each answer briefly in English, and progress logically from opening to closing.",
+    "questions": []
+  },
+  {
+    "id": "frontend",
+    "title": "Front-End Engineer",
+    "companyName": "Lumen Health Tech",
+    "location": "Seattle, WA (Hybrid)",
+    "salaryRange": "$125k - $150k base + equity",
+    "employmentType": "Full-time",
+    "summary": "Builds high-performance, accessible web experiences while partnering with design and backend teams.",
+    "requirements": [
+      "4+ years with modern JavaScript frameworks (React preferred)",
+      "Demonstrated experience with TypeScript and component libraries",
+      "Strong understanding of web accessibility (WCAG) and performance budgets",
+      "Experience shipping design-system driven interfaces with tools like Storybook or Figma",
+      "Comfort profiling bundle size, Core Web Vitals, and browser rendering bottlenecks",
+      "Knowledge of progressive enhancement, cross-browser compatibility, and responsive layouts"
+    ],
+    "prompt": "You are Aoibheann interviewing for the Front-End Engineer role in the United States. Conduct the interview in English. Use the provided questions to explore modern UI development, React expertise, performance optimization, accessibility, and cross-functional collaboration. Ask one question at a time, acknowledge each answer briefly in English, and keep the tone friendly yet professional.",
+    "questions": [
+      {
+        "id": "fe-background",
+        "text": "Walk me through the most impactful front-end project you've delivered in the last two years."
+      },
+      {
+        "id": "fe-architecture",
+        "text": "How do you decide on component structure and state management for a large single-page application?"
+      },
+      {
+        "id": "fe-performance",
+        "text": "Share an example of a performance optimization that meaningfully improved load or interaction speed."
+      },
+      {
+        "id": "fe-quality",
+        "text": "What practices and tooling do you use to keep front-end codebases maintainable and testable?"
+      },
+      {
+        "id": "fe-collaboration",
+        "text": "Describe how you collaborate with product design and backend engineers when requirements shift late in a sprint."
+      }
+    ]
+  },
+  {
+    "id": "backend",
+    "title": "Backend Engineer",
+    "companyName": "Lumen Health Tech",
+    "location": "Seattle, WA (Hybrid)",
+    "salaryRange": "$135k - $165k base + equity",
+    "employmentType": "Full-time",
+    "summary": "Designs reliable service architectures, ensures data integrity, and keeps APIs secure and scalable.",
+    "requirements": [
+      "5+ years building distributed services with Node.js, Go, or Java",
+      "Experience with event-driven architectures and relational/NoSQL databases",
+      "Familiar with observability stacks (Datadog, Prometheus, OpenTelemetry)",
+      "Security-first mindset including secrets management and auth best practices",
+      "Hands-on with CI/CD pipelines, automated testing, and infrastructure as code",
+      "Ability to optimize services for cost, latency, and high availability in cloud environments",
+      "Comfort facilitating design reviews and mentoring peers through code reviews"
+    ],
+    "prompt": "You are Aoibheann interviewing for the Backend Engineer role in the United States. Conduct the interview in English. Use the provided questions to evaluate API design, service scalability, database choices, observability practices, and collaboration with front-end teams. Ask one question at a time, acknowledge each answer briefly in English, and keep follow-ups concise.",
+    "questions": [
+      {
+        "id": "be-architecture",
+        "text": "Tell me about the architecture of a core service you built or owned\u2014what problem did it solve?"
+      },
+      {
+        "id": "be-scalability",
+        "text": "When traffic spikes, how do you handle scaling, rate limits, and graceful degradation?"
+      },
+      {
+        "id": "be-data",
+        "text": "Give an example of how you balanced data consistency and latency when designing a system."
+      },
+      {
+        "id": "be-observability",
+        "text": "What monitoring, logging, or alerting practices have helped you debug production issues quickly?"
+      },
+      {
+        "id": "be-collab",
+        "text": "How do you partner with front-end or DevOps teams to deliver features on schedule?"
+      }
+    ]
+  },
+  {
+    "id": "product",
+    "title": "Product Manager",
+    "companyName": "Brightline Mobility",
+    "location": "Chicago, IL (Hybrid)",
+    "salaryRange": "$120k - $140k base + bonus",
+    "employmentType": "Full-time",
+    "summary": "Translates customer insight into product strategy, prioritizes roadmaps, and drives cross-functional execution.",
+    "requirements": [
+      "5+ years managing B2B SaaS products with data-heavy workflows",
+      "Strong analytical mindset with SQL or analytics tools experience",
+      "History of partnering with engineering leads to deliver iterative roadmaps",
+      "Proven ability to define success metrics and run experiments that validate hypotheses",
+      "Demonstrated ownership of backlog prioritization with frameworks like RICE or MoSCoW"
+    ],
+    "prompt": "You are Aoibheann interviewing for the Product Manager role in the United States. Conduct the interview in English. Use the provided questions to assess product discovery skills, prioritization frameworks, roadmap communication, stakeholder alignment, and metric-driven decision making. Ask one question at a time, acknowledge each answer briefly in English, and guide the conversation smoothly from start to finish.",
+    "questions": [
+      {
+        "id": "pm-insight",
+        "text": "Describe a time you uncovered a critical customer insight that shifted your roadmap."
+      },
+      {
+        "id": "pm-prioritization",
+        "text": "How do you prioritize features when stakeholders have competing demands?"
+      },
+      {
+        "id": "pm-roadmap",
+        "text": "Walk me through how you built and communicated a product roadmap for the next two quarters."
+      },
+      {
+        "id": "pm-collaboration",
+        "text": "Share how you handle misalignment between engineering, design, and go-to-market teams."
+      },
+      {
+        "id": "pm-metrics",
+        "text": "Which product metrics do you track most closely, and how do they inform your decisions?"
+      }
+    ]
+  },
+  {
+    "id": "data-analyst",
+    "title": "Data Analyst",
+    "companyName": "Brightline Mobility",
+    "location": "Chicago, IL (Hybrid)",
+    "salaryRange": "$95k - $115k base + bonus",
+    "employmentType": "Full-time",
+    "summary": "Delivers analytical insights, builds reporting suites, and drives experimentation to support business decisions.",
+    "requirements": [
+      "3+ years in analytics for SaaS or marketplace businesses",
+      "Advanced SQL and proficiency in Python or R for statistical analysis",
+      "Hands-on experience with Looker, Tableau, or similar BI tools",
+      "Comfort translating data stories for executives and GTM teams",
+      "Knowledge of experimentation design, causal inference, and uplift measurement",
+      "Experience building self-serve dashboards and data literacy enablement for business partners"
+    ],
+    "prompt": "You are Aoibheann interviewing for the Data Analyst role in the United States. Conduct the interview in English. Use the provided questions to explore analytical project impact, metric design, experimentation, tooling depth, and storytelling for non-technical partners. Ask one question at a time, acknowledge each answer briefly in English, and maintain a thoughtful, professional tone.",
+    "questions": [
+      {
+        "id": "da-project",
+        "text": "Tell me about a data project where your analysis directly influenced a major business decision."
+      },
+      {
+        "id": "da-metrics",
+        "text": "How do you design and maintain a metric framework that leaders can trust?"
+      },
+      {
+        "id": "da-experiment",
+        "text": "What is your process for designing and interpreting A/B tests or other experiments?"
+      },
+      {
+        "id": "da-tooling",
+        "text": "Which data tools, languages, or visualization platforms do you rely on most, and why?"
+      },
+      {
+        "id": "da-storytelling",
+        "text": "How do you tailor your communication when sharing data stories with non-technical stakeholders?"
+      }
+    ]
+  },
+  {
+    "id": "customer-success",
+    "title": "Customer Success Manager",
+    "companyName": "Northstar Analytics",
+    "location": "San Francisco, CA (Hybrid)",
+    "salaryRange": "$100k - $120k base + bonus",
+    "employmentType": "Full-time",
+    "summary": "Ensures customers realize value, drives renewals and expansion, and orchestrates cross-team responses to issues.",
+    "requirements": [
+      "5+ years managing enterprise customers in SaaS",
+      "Experience running QBRs and value reviews with VP/C-level stakeholders",
+      "Proven ability to create success plans and coordinate multi-team responses",
+      "Familiarity with Gainsight or Catalyst for health scoring and playbooks",
+      "Comfort guiding executive business reviews with clear ROI narratives and next steps",
+      "History of driving expansions or upsells through consultative discovery",
+      "Ability to partner with product and engineering on roadmap influence and beta programs",
+      "Skilled at building repeatable playbooks for onboarding, adoption, and renewal stages"
+    ],
+    "prompt": "You are Aoibheann interviewing for the Customer Success Manager role in the United States. Conduct the interview in English. Use the provided questions to understand onboarding approach, retention strategy, escalation management, success metrics, and expansion playbooks. Ask one question at a time, acknowledge each answer briefly in English, and close with a warm, professional thank-you.",
+    "questions": [
+      {
+        "id": "cs-onboarding",
+        "text": "Can you describe how you onboard a new enterprise customer and set them up for success?"
+      },
+      {
+        "id": "cs-retention",
+        "text": "Tell me about a customer at risk of churn\u2014what did you do to retain them?"
+      },
+      {
+        "id": "cs-escalation",
+        "text": "How do you coordinate internal teams when a client escalation needs fast resolution?"
+      },
+      {
+        "id": "cs-metrics",
+        "text": "Which customer success metrics do you track, and how do they influence your playbook?"
+      },
+      {
+        "id": "cs-expansion",
+        "text": "Share an example of how you identified and executed on an expansion opportunity with an existing account."
+      }
+    ]
+  }
+]
