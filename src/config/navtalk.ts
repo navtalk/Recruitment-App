@@ -1,6 +1,6 @@
 import type { JobRole } from '../types'
 
-const DEFAULT_LICENSE = 'sk_navtalk_9p9flyCQXGKXuu1iPZXaBYsQhQRq0ZDm'
+const DEFAULT_LICENSE = ''
 // ✒️ // ✒️ character name. Currently supported characters include: navtalk.Alex, navtalk.Ethan, navtalk.Leo, navtalk.Lily, navtalk.Emma, navtalk.Sophia, navtalk.Mia, navtalk.Chloe, navtalk.Zoe, navtalk.Ava
 // You can check the specific images on the official website: https://console.navtalk.ai/login#/playground/realtime_digital_human.
 const DEFAULT_CHARACTER_NAME = 'navtalk.Emma'  
