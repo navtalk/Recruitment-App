@@ -1,94 +1,210 @@
 <template>
   <div class="app">
-    <header class="hero-banner">
-      <span class="hero-chip">AI-powered Screening</span>
-      <h1 class="hero-title">U.S. Digital Recruiting Hub</h1>
-      <p class="hero-subtitle">Search open roles, launch a live voice interview, and compare transcripts across candidates without leaving the page.</p>
-      <div class="hero-meta">
-        <span>Voice-led Q&A</span>
-        <span>Role-tailored prompts</span>
-        <span>Instant transcripts</span>
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-logo">NavTalk</span>
+        <span class="brand-tagline">Digital Hiring Studio</span>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="ghost-link">Post a job</button>
       </div>
     </header>
 
-    <section class="search-row">
-      <input
-        v-model="searchQuery"
-        class="search-input"
-        type="search"
-        placeholder="Search by job title, company, or keywords"
-        aria-label="Search roles"
-      />
-    </section>
-
-    <section class="jobs">
-      <article v-for="job in filteredJobs" :key="job.id" class="job-card">
-        <div class="job-header">
-          <div>
-            <h2>{{ job.title }}</h2>
-            <p class="job-company" v-if="job.companyName || job.location">
-              <span v-if="job.companyName">{{ job.companyName }}</span>
-              <span v-if="job.companyName && job.location"> &bull; </span>
-              <span v-if="job.location">{{ job.location }}</span>
-            </p>
+    <main class="layout">
+      <div class="search-widget">
+        <h2 class="search-heading">Search jobs</h2>
+        <div class="search-card">
+          <div class="search-pill">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input
+              v-model="searchQuery"
+              type="search"
+              placeholder="Job title, keywords, or company"
+              aria-label="Search by job title, keywords, or company"
+            />
           </div>
-          <span v-if="job.employmentType" class="job-tag">{{ job.employmentType }}</span>
-        </div>
-
-        <p class="job-summary">{{ job.summary }}</p>
-
-        <div class="job-meta">
-          <span v-if="job.salaryRange" class="job-salary">{{ job.salaryRange }}</span>
-        </div>
-
-        <ul v-if="job.requirements?.length" class="requirements">
-          <li v-for="requirement in job.requirements" :key="requirement">{{ requirement }}</li>
-        </ul>
-
-        <div class="actions">
-          <button
-            class="primary"
-            type="button"
-            @click="handleStartInterview(job)"
-            :disabled="isJobCompleted(job.id)"
-          >
-            {{ isJobCompleted(job.id) ? 'Interview Completed' : 'Start Interview' }}
-          </button>
-          <button
-            class="secondary"
-            type="button"
-            @click="openRecords(job)"
-            :disabled="!recordsByJob[job.id] || recordsByJob[job.id].length === 0"
-          >
-            View Records
+          <div class="search-pill narrow">
+            <span class="location-icon" aria-hidden="true">📍</span>
+            <input
+              v-model="locationQuery"
+              type="search"
+              placeholder="Location"
+              aria-label="Search by location"
+            />
+          </div>
+          <button type="button" class="search-button">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <span>Search Jobs</span>
           </button>
         </div>
-      </article>
-
-      <p v-if="filteredJobs.length === 0" class="empty-state">No roles match your search right now. Try a different keyword.</p>
-    </section>
-
-    <div v-if="showNameDialog" class="dialog-overlay">
-      <div class="dialog-card">
-        <h2>Candidate Details</h2>
-        <p>Please provide the candidate's first and last name. The interview will begin as soon as you confirm.</p>
-        <form class="dialog-form" @submit.prevent="handleConfirmName">
-          <label>
-            First Name
-            <input v-model.trim="firstName" type="text" required placeholder="e.g., Alex" @invalid="(event) => handleInvalid(event, 'Please enter the first name.')" @input="handleInput" />
-          </label>
-          <label>
-            Last Name
-            <input v-model.trim="lastName" type="text" required placeholder="e.g., Johnson" @invalid="(event) => handleInvalid(event, 'Please enter the last name.')" @input="handleInput" />
-          </label>
-          <p v-if="nameError" class="error">{{ nameError }}</p>
-          <div class="dialog-actions">
-            <button type="button" class="ghost" @click="handleCancelName">Cancel</button>
-            <button type="submit" class="primary">OK</button>
-          </div>
-        </form>
       </div>
-    </div>
+
+      <div class="content-grid">
+        <aside class="sidebar">
+          <section class="list-section">
+            <div class="section-header">
+              <h3>Featured jobs</h3>
+              <span>{{ featuredJobs.length }}</span>
+            </div>
+            <ul class="job-list">
+            <li
+              v-for="job in featuredJobs"
+              :key="job.id"
+              :class="['job-row', { active: selectedJob && selectedJob.id === job.id }]"
+              @click="handleSelectJob(job)"
+            >
+              <div class="job-avatar">{{ getJobInitials(job.title) }}</div>
+              <div class="job-row-content">
+                <h4>{{ job.title }}</h4>
+                <p>{{ job.companyName }}</p>
+                <span>{{ job.location }}</span>
+              </div>
+              <span class="job-row-meta">Updated recently</span>
+            </li>
+          </ul>
+          <p v-if="featuredJobs.length === 0" class="list-empty">No featured jobs match your search.</p>
+        </section>
+
+        <section class="list-section">
+          <div class="section-header">
+            <h3>Latest jobs</h3>
+            <span>{{ latestJobs.length }}</span>
+          </div>
+          <ul class="job-list">
+            <li
+              v-for="job in latestJobs"
+              :key="job.id"
+              :class="['job-row', { active: selectedJob && selectedJob.id === job.id }]"
+              @click="handleSelectJob(job)"
+            >
+              <div class="job-avatar job-avatar-alt">{{ getJobInitials(job.title) }}</div>
+              <div class="job-row-content">
+                <h4>{{ job.title }}</h4>
+                <p>{{ job.companyName }}</p>
+                <span>{{ job.location }}</span>
+              </div>
+              <span class="job-row-meta">New</span>
+            </li>
+          </ul>
+          <p v-if="latestJobs.length === 0" class="list-empty">No more job posts.</p>
+          </section>
+        </aside>
+
+        <section class="detail-column">
+          <div v-if="selectedJob" class="detail-card">
+            <header class="detail-header">
+              <div class="detail-title">
+                <span class="status-pill">Application submitted</span>
+                <h1>{{ selectedJob.title }}</h1>
+                <p>
+                  <span v-if="selectedJob.companyName">{{ selectedJob.companyName }}</span>
+                  <span v-if="selectedJob.companyName && selectedJob.location"> • </span>
+                  <span v-if="selectedJob.location">{{ selectedJob.location }}</span>
+                </p>
+              </div>
+              <div class="detail-actions">
+                <button
+                  class="secondary small"
+                  type="button"
+                  @click="openRecords(selectedJob)"
+                  :disabled="!recordsByJob[selectedJob.id] || recordsByJob[selectedJob.id].length === 0"
+                >
+                  View Records
+                </button>
+              </div>
+            </header>
+
+            <div class="detail-alert">
+              <div class="alert-figure">
+                <img
+                  :src="interviewerAvatar"
+                  alt="Digital interviewer profile"
+                  loading="lazy"
+                />
+              </div>
+              <div class="alert-content">
+                <h4>You're successfully applied!</h4>
+                <p>
+                  Thanks for applying to move forward, please complete a quick online pre-interview — it only takes a few minutes.
+                </p>
+                <div class="detail-buttons">
+                  <button
+                    class="primary"
+                    type="button"
+                    @click="selectedJob && handleStartInterview(selectedJob)"
+                    :disabled="!selectedJob || isJobCompleted(selectedJob.id)"
+                  >
+                    {{ selectedJob && isJobCompleted(selectedJob.id) ? 'Interview Completed' : 'Start Interview' }}
+                  </button>
+                  <button class="ghost" type="button">Save for later</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-meta" v-if="selectedJob.salaryRange || selectedJob.employmentType">
+              <div class="meta-block">
+                <span class="meta-label">Base pay range</span>
+                <span class="meta-value">{{ selectedJob.salaryRange ?? 'Not provided' }}</span>
+              </div>
+              <div class="meta-block" v-if="selectedJob.employmentType">
+                <span class="meta-label">Employment type</span>
+                <span class="meta-value">{{ selectedJob.employmentType }}</span>
+              </div>
+            </div>
+
+            <div class="detail-body">
+              <section class="detail-section">
+                <h3>Role overview</h3>
+                <p>{{ selectedJob.summary }}</p>
+              </section>
+
+              <section class="detail-section" v-if="selectedJob.requirements?.length">
+                <h3>Key responsibilities</h3>
+                <ul>
+                  <li v-for="requirement in selectedJob.requirements" :key="requirement">{{ requirement }}</li>
+                </ul>
+              </section>
+            </div>
+          </div>
+          <div v-else class="detail-empty">
+            <h2>No roles found</h2>
+            <p>Try adjusting your filters to discover more opportunities.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-logo">NavTalk</span>
+        <p>Connect talented professionals with amazing companies. Your next career opportunity is just one click away.</p>
+      </div>
+      <div class="footer-column">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">NavTalk</a></li>
+          <li><a href="#">NavBoard</a></li>
+          <li><a href="#">Case studies</a></li>
+          <li><a href="#">Blog</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="#">YouTube</a></li>
+          <li><a href="#">Discord</a></li>
+          <li><a href="#">LinkedIn</a></li>
+          <li><a href="#">Twitter</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:+12345671546">+1 (234) 567-1546</a></li>
+          <li><a href="mailto:sales@navtalk.com">sales@navtalk.com</a></li>
+        </ul>
+      </div>
+    </footer>
 
     <div v-if="recordsJob" class="dialog-overlay">
       <div class="records-card">
@@ -154,18 +270,16 @@ import { computed, ref, watch } from 'vue'
 import jobData from './data/jobQuestions.json'
 import DigitalHumanModal from './components/DigitalHumanModal.vue'
 import type { ConversationTurn, InterviewAnswer, InterviewRecord, JobRole } from './types'
+import interviewerAvatar from './assets/interviewer-avatar.png'
 
 const jobs = jobData as JobRole[]
-const pendingJob = ref<JobRole | null>(null)
 const activeJob = ref<JobRole | null>(null)
-const showNameDialog = ref(false)
-const firstName = ref('')
-const lastName = ref('')
-const nameError = ref('')
 const searchQuery = ref('')
+const locationQuery = ref('')
 const currentCandidateName = ref<{ first: string; last: string } | null>(null)
 const recordsJob = ref<JobRole | null>(null)
 const expandedRecordIds = ref<Set<string>>(new Set())
+const selectedJob = ref<JobRole | null>(jobs[0] ?? null)
 
 const STORAGE_KEY = 'digital-human:records-v2'
 const interviewRecords = ref<InterviewRecord[]>(loadRecords())
@@ -191,9 +305,8 @@ const completedJobIds = computed(() => {
 
 const filteredJobs = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) {
-    return jobs
-  }
+  const location = locationQuery.value.trim().toLowerCase()
+
   return jobs.filter((job) => {
     const searchable = [
       job.title,
@@ -207,9 +320,15 @@ const filteredJobs = computed(() => {
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
-    return searchable.includes(query)
+
+    const matchesQuery = query ? searchable.includes(query) : true
+    const matchesLocation = location ? (job.location ?? '').toLowerCase().includes(location) : true
+    return matchesQuery && matchesLocation
   })
 })
+
+const featuredJobs = computed(() => filteredJobs.value.slice(0, 3))
+const latestJobs = computed(() => filteredJobs.value.slice(3))
 
 const recordsForSelectedJob = computed(() => {
   if (!recordsJob.value) {
@@ -247,39 +366,22 @@ watch(recordsForSelectedJob, (records) => {
   expandedRecordIds.value = next
 })
 
+watch(filteredJobs, (list) => {
+  if (!list.length) {
+    selectedJob.value = null
+    return
+  }
+  if (!selectedJob.value || !list.some((job) => job.id === selectedJob.value?.id)) {
+    selectedJob.value = list[0]
+  }
+})
+
 function handleStartInterview(job: JobRole) {
   if (isJobCompleted(job.id)) {
     return
   }
-  pendingJob.value = job
-  firstName.value = ''
-  lastName.value = ''
-  nameError.value = ''
-  showNameDialog.value = true
-}
-
-function handleConfirmName() {
-  if (!firstName.value.trim() || !lastName.value.trim()) {
-    nameError.value = 'Please enter both the first and last name.'
-    return
-  }
-  if (!pendingJob.value) {
-    showNameDialog.value = false
-    return
-  }
-  nameError.value = ''
-  showNameDialog.value = false
-  currentCandidateName.value = {
-    first: firstName.value.trim(),
-    last: lastName.value.trim(),
-  }
-  activeJob.value = pendingJob.value
-  pendingJob.value = null
-}
-
-function handleCancelName() {
-  pendingJob.value = null
-  showNameDialog.value = false
+  currentCandidateName.value = generateRandomCandidateName()
+  activeJob.value = job
 }
 
 function handleCancelInterview() {
@@ -322,6 +424,31 @@ function openRecords(job: JobRole) {
   initializeExpandedRecords(job.id)
 }
 
+function handleSelectJob(job: JobRole) {
+  selectedJob.value = job
+}
+
+function getJobInitials(title: string) {
+  const parts = title.split(' ').filter(Boolean)
+  if (!parts.length) {
+    return 'JT'
+  }
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+}
+
+const firstNames = ['Alex', 'Jordan', 'Morgan', 'Taylor', 'Casey', 'Jamie', 'Riley', 'Avery', 'Harper', 'Logan']
+const lastNames = ['Chen', 'Wang', 'Zhang', 'Liu', 'Smith', 'Johnson', 'Brown', 'Davis', 'Garcia', 'Lee']
+
+function generateRandomCandidateName(): { first: string; last: string } {
+  const first = firstNames[Math.floor(Math.random() * firstNames.length)]
+  const last = lastNames[Math.floor(Math.random() * lastNames.length)]
+  return { first, last }
+}
+
 function isJobCompleted(jobId: string) {
   return completedJobIds.value.has(jobId)
 }
@@ -354,15 +481,6 @@ function initializeExpandedRecords(jobId: string) {
   expandedRecordIds.value = next
 }
 
-function handleInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  input.setCustomValidity('')
-}
-
-function handleInvalid(event: Event, message: string) {
-  const input = event.target as HTMLInputElement
-  input.setCustomValidity(message)
-}
 function loadRecords(): InterviewRecord[] {
   if (typeof window === 'undefined') {
     return []
@@ -402,252 +520,626 @@ function formatTime(iso: string) {
 }
 </script>
 
+
+
 <style scoped>
 .app {
   min-height: 100vh;
-  padding: 3rem 1.5rem 4rem;
-  max-width: 1160px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f6fb;
+  color: #0f172a;
 }
 
-.hero-banner {
-  position: relative;
-  overflow: hidden;
-  border-radius: 32px;
-  background: radial-gradient(circle at 15% -10%, rgba(99, 102, 241, 0.35), transparent 55%),
-    radial-gradient(circle at 80% 120%, rgba(56, 189, 248, 0.25), transparent 60%),
-    linear-gradient(135deg, #111c44, #1e1b4b);
-  padding: 3.25rem 3rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.15rem;
-  color: #f8fafc;
-  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.35);
-}
-
-.hero-banner::before,
-.hero-banner::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.hero-banner::before {
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.35), transparent 70%);
-  top: -120px;
-  right: -90px;
-}
-
-.hero-banner::after {
-  width: 240px;
-  height: 240px;
-  background: radial-gradient(circle, rgba(244, 244, 255, 0.15), transparent 65%);
-  bottom: -140px;
-  left: -70px;
-}
-
-.hero-chip {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  background: rgba(56, 189, 248, 0.2);
-  color: #e0f2fe;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.hero-title {
-  margin: 0;
-  font-size: clamp(2.4rem, 4vw, 3.1rem);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.hero-subtitle {
-  margin: 0;
-  color: rgba(241, 245, 249, 0.86);
-  line-height: 1.7;
-  max-width: 36rem;
-}
-
-.hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-}
-
-.hero-meta span {
-  padding: 0.45rem 0.85rem;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.18);
-  color: #e2e8f0;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.search-row {
+.site-header {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-}
-
-.search-input {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  font-size: 1rem;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #5162ff;
-  box-shadow: 0 0 0 2px rgba(81, 98, 255, 0.2);
-}
-
-.search-count {
-  font-size: 0.9rem;
-  color: #4b5563;
-  white-space: nowrap;
-}
-
-.jobs {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.job-card {
+  padding: 1.75rem clamp(1.5rem, 6vw, 3rem) 1.5rem;
   background: #ffffff;
-  border-radius: 20px;
-  padding: 1.5rem;
-  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-.job-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.job-header h2 {
-  margin: 0;
-  font-size: 1.35rem;
-  color: #1f2937;
-}
-
-.job-company {
-  margin: 0.25rem 0 0;
-  color: #4b5563;
-  font-size: 0.95rem;
-}
-
-.job-tag {
-  background: rgba(99, 102, 241, 0.15);
-  color: #4338ca;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-.job-summary {
-  margin: 0;
-  color: #374151;
-  line-height: 1.6;
-}
-
-.job-meta {
-  display: flex;
-  gap: 0.75rem;
-  font-size: 0.95rem;
-  color: #1f2937;
-}
-
-.job-salary {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-.requirements {
-  margin: 0;
-  padding-left: 1.1rem;
-  color: #4b5563;
-  font-size: 0.95rem;
+.brand {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+.brand-logo {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #4338ca;
+  letter-spacing: -0.01em;
 }
 
-.primary,
-.secondary,
-.ghost {
-  padding: 0.6rem 1.6rem;
+.brand-tagline {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ghost-link {
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: transparent;
+  color: #4338ca;
+  padding: 0.55rem 1.25rem;
   border-radius: 999px;
-  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.ghost-link:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #312e81;
+  transform: translateY(-1px);
+}
+
+.layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding: 2.5rem clamp(1.5rem, 6vw, 3rem) 3.5rem;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+.content-grid {
+  flex: 1;
+  display: flex;
+  gap: 2.5rem;
+  min-height: 0;
+}
+
+.sidebar {
+  width: min(520px, 40vw);
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.search-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.search-heading {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: #111827;
+  padding-left: 0.35rem;
+}
+
+.search-card {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 48px;
+  padding: 0.5rem 0.6rem;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.search-pill {
+  flex: 1;
+  background: #f3f4f8;
+  border-radius: 40px;
+  padding: 0.55rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.search-pill:focus-within {
+  border-color: rgba(79, 70, 229, 0.35);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+  background: #ffffff;
+}
+
+.search-icon,
+.location-icon {
+  font-size: 1rem;
+  color: #94a3b8;
+}
+
+.search-pill input {
+  flex: 1;
   border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.search-pill input::placeholder {
+  color: #9aa3b9;
+}
+
+.search-pill input:focus {
+  outline: none;
+}
+
+.search-pill.narrow {
+  flex: 0.25;
+  min-width: 120px;
+}
+
+.search-card .search-button {
+  padding: 0.65rem 1.6rem;
+  background: #1e1b4b;
+  color: #ffffff;
+  border-radius: 40px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.search-card .search-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(30, 27, 75, 0.2);
+}
+
+.search-card button {
+  padding: 0.65rem 1.35rem;
+  background: #1e1b4b;
+  color: #ffffff;
+  border-radius: 40px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-card button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(30, 27, 75, 0.2);
+}
+
+.list-section {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.list-section:last-of-type {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #0f172a;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.section-header span {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.job-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: calc(100% - 1rem);
+  overflow-y: auto;
+}
+
+.job-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(241, 245, 249, 0.6);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.job-row:hover {
+  border-color: rgba(79, 70, 229, 0.3);
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.12);
+  transform: translateY(-1px);
+}
+
+.job-row.active {
+  border-color: rgba(79, 70, 229, 0.5);
+  background: rgba(243, 244, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.22);
+}
+
+.job-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: rgba(79, 70, 229, 0.12);
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.job-avatar-alt {
+  background: rgba(16, 185, 129, 0.15);
+  color: #0f766e;
+}
+
+.job-row-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.job-row-content h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #0f172a;
+}
+
+.job-row-content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.job-row-content span {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.job-row-meta {
+  font-size: 0.75rem;
+  color: #6366f1;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.list-empty {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.detail-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.detail-card {
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 2rem clamp(1.5rem, 4vw, 2.6rem);
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  height: 100%;
+  min-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.detail-title h1 {
+  margin: 0.35rem 0 0.25rem;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: #0f172a;
+}
+
+.detail-title p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #0f766e;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.secondary.small {
+  padding: 0.45rem 1.05rem;
+  font-size: 0.85rem;
+}
+
+.detail-alert {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: 20px;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(112px, 148px) 1fr;
+  align-items: stretch;
+  gap: 1.5rem;
+  color: #1e1b4b;
+}
+
+.alert-figure {
+  height: 100%;
+  width: clamp(112px, 12vw, 148px);
+  aspect-ratio: 3 / 4;
+  align-self: stretch;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 36px rgba(30, 64, 175, 0.22);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  display: flex;
+}
+
+.alert-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.detail-alert h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.detail-alert p {
+  margin: 0;
+  line-height: 1.6;
+  color: #312e81;
+}
+
+.detail-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .primary {
-  background: linear-gradient(135deg, #6a83ff, #5063ff);
-  color: #fff;
+  padding: 0.75rem 1.8rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #6366f1, #4338ca);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(80, 99, 255, 0.25);
+  box-shadow: 0 18px 32px rgba(99, 102, 241, 0.24);
 }
 
 .primary:disabled {
   cursor: not-allowed;
-  background: rgba(148, 163, 184, 0.45);
-  color: rgba(255, 255, 255, 0.75);
+  background: rgba(148, 163, 184, 0.4);
   box-shadow: none;
-  transform: none;
 }
 
 .secondary {
-  background: rgba(99, 102, 241, 0.12);
-  color: #4338ca;
+  padding: 0.7rem 1.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(248, 250, 252, 0.8);
+  color: #1f2937;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .secondary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(67, 56, 202, 0.15);
+  border-color: rgba(79, 70, 229, 0.45);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
 }
 
 .secondary:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-  transform: none;
   box-shadow: none;
+  transform: none;
+}
+
+.ghost {
+  padding: 0.7rem 1.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: transparent;
+  color: #4338ca;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.ghost:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #312e81;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.meta-block {
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.meta-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.meta-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  line-height: 1.7;
+}
+
+.detail-section h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.detail-section p {
+  margin: 0;
+  color: #475569;
+}
+
+.detail-section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #334155;
+}
+
+.detail-empty {
+  flex: 1;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: #475569;
+}
+
+.detail-empty h2 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.site-footer {
+  margin-top: auto;
+  padding: 2.5rem clamp(1.5rem, 6vw, 3rem) 2.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 2rem;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.footer-brand .brand-logo {
+  color: #ffffff;
+  font-size: 1.3rem;
+}
+
+.site-footer h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+.site-footer ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.site-footer a {
+  color: #cbd5f5;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: #f8fafc;
 }
 
 .dialog-overlay {
@@ -672,57 +1164,6 @@ function formatTime(iso: string) {
   gap: 1.5rem;
   max-height: min(90vh, 720px);
   overflow-y: auto;
-}
-
-.records-card {
-  width: min(720px, 100%);
-  background: #ffffff;
-  border-radius: 24px;
-  padding: 2rem;
-  box-shadow: 0 32px 64px rgba(15, 23, 42, 0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  max-height: min(90vh, 720px);
-  overflow: hidden;
-}
-
-.records-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-.records-scroll {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  margin-right: -0.5rem;
-}
-
-.records-scroll::-webkit-scrollbar {
-  width: 8px;
-}
-
-.records-scroll::-webkit-scrollbar-track {
-  background: rgba(148, 163, 184, 0.18);
-  border-radius: 999px;
-}
-
-.records-scroll::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.45);
-  border-radius: 999px;
-}
-
-@supports (scrollbar-width: thin) {
-  .records-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(99, 102, 241, 0.45) rgba(148, 163, 184, 0.18);
-  }
 }
 
 .dialog-form {
@@ -758,14 +1199,17 @@ function formatTime(iso: string) {
   gap: 0.75rem;
 }
 
-.ghost {
-  background: transparent;
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: #5162ff;
-}
-
-.ghost:hover {
-  border-color: rgba(99, 102, 241, 0.6);
+.records-card {
+  width: min(720px, 100%);
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 32px 64px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: min(90vh, 720px);
+  overflow: hidden;
 }
 
 .records-header {
@@ -778,12 +1222,12 @@ function formatTime(iso: string) {
 .records-header h2 {
   margin: 0;
   font-size: 1.4rem;
-  color: #1f2937;
+  color: #111827;
 }
 
 .records-header p {
   margin: 0.35rem 0 0;
-  color: #4b5563;
+  color: #475569;
   font-size: 0.95rem;
 }
 
@@ -792,14 +1236,31 @@ function formatTime(iso: string) {
   background: transparent;
   font-size: 1.5rem;
   cursor: pointer;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(15, 23, 42, 0.5);
+}
+
+.records-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.records-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-right: -0.5rem;
 }
 
 .record-item {
   border: 1px solid rgba(148, 163, 184, 0.25);
   border-radius: 18px;
   padding: 1.25rem;
-  background: #f9fafb;
+  background: #f8fafc;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -953,35 +1414,98 @@ function formatTime(iso: string) {
   text-align: center;
 }
 
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
+@media (max-width: 1200px) {
+  .content-grid {
+    flex-direction: column;
   }
-  50% {
-    transform: translateY(-12px);
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: none;
+  }
+
+  .list-section {
+    flex: 1 1 min(320px, 100%);
+  }
+
+  .detail-column {
+    width: 100%;
   }
 }
 
-@media (max-width: 720px) {
-  .search-row {
+@media (max-width: 900px) {
+  .layout {
+    padding: 2rem 1.5rem 3rem;
+    gap: 1.75rem;
+  }
+
+  .sidebar {
+    flex-direction: column;
+  }
+
+  .detail-card {
+    padding: 1.75rem;
+  }
+
+  .detail-alert {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .alert-content {
+    align-items: center;
+  }
+
+  .alert-figure {
+    width: min(180px, 60vw);
+  }
+
+  .detail-buttons {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.75rem;
   }
+}
 
-  .job-actions {
+@media (max-width: 640px) {
+  .site-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 1rem;
   }
 
-  .conversation li {
-    max-width: 88%;
+  .detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
   }
 
-  .dialog-card,
-  .records-card {
-    padding: 1.5rem;
+  .detail-alert {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .alert-content {
+    align-items: center;
+  }
+
+  .alert-figure {
+    width: min(160px, 70vw);
+  }
+
+  .detail-meta {
+    flex-direction: column;
+  }
+
+  .site-footer {
+    grid-template-columns: 1fr;
   }
 }
 </style>
+
+
+
+

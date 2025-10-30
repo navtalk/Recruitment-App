@@ -1,41 +1,80 @@
 <template>
   <div class="modal-overlay" role="dialog" aria-modal="true">
     <div class="modal-card">
-      <section class="video-section">
-        <div class="video-shell">
-          <div class="video-frame">
-            <div v-if="!isSessionActive" class="video-placeholder">Connecting to the digital interviewer. Please hold...</div>
-            <video
-              v-show="isSessionActive"
-              ref="videoRef"
-              class="digital-human-video"
-              autoplay
-              playsinline
-            ></video>
+      <div class="modal-layout">
+        <section class="video-section">
+          <div class="video-shell">
+            <div class="video-frame">
+              <div v-if="!isSessionActive" class="video-placeholder">Connecting to the digital interviewer. Please hold...</div>
+              <video
+                v-show="isSessionActive"
+                ref="videoRef"
+                class="digital-human-video"
+                autoplay
+                playsinline
+              ></video>
+            </div>
           </div>
-        </div>
-        <div class="status-strip">
-          <div class="status-bar">
-            <span class="status-indicator" :class="statusClass"></span>
-            <span>{{ statusMessage }}</span>
+          <div class="control-stack">
+            <div class="status-strip">
+              <div class="status-bar">
+                <span class="status-indicator" :class="`status-${statusInfo.key}`"></span>
+                <span>{{ statusInfo.message }}</span>
+              </div>
+              <div class="alert-stack">
+                <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+                <p v-if="licenseMissing" class="warning-message">
+                  Update <code>src/config/navtalk.ts</code> with a valid LICENSE before starting an interview.
+                </p>
+              </div>
+            </div>
+            <button
+              v-if="!hasEmittedComplete && isSessionActive"
+              class="end-call"
+              type="button"
+              @click="handleCancel"
+            >
+              Hang Up
+            </button>
           </div>
-          <div class="alert-stack">
-            <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-            <p v-if="licenseMissing" class="warning-message">
-              Update <code>src/config/navtalk.ts</code> with a valid LICENSE before starting an interview.
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <button
-        v-if="!hasEmittedComplete && isSessionActive"
-        class="end-call"
-        type="button"
-        @click="handleCancel"
-      >
-        Hang Up
-      </button>
+        <aside class="job-section">
+          <header class="job-header">
+            <div class="job-badge">{{ jobInitials }}</div>
+            <div class="job-heading">
+              <div class="job-title-row">
+                <h2>{{ props.job.title }}</h2>
+                <span v-if="props.job.employmentType" class="job-tag">{{ props.job.employmentType }}</span>
+              </div>
+              <p v-if="props.job.companyName" class="job-company">{{ props.job.companyName }}</p>
+            </div>
+          </header>
+
+          <ul class="job-meta">
+            <li v-if="props.job.location">
+              <span class="meta-label">Location</span>
+              <span class="meta-value">{{ props.job.location }}</span>
+            </li>
+            <li v-if="props.job.salaryRange">
+              <span class="meta-label">Base pay range</span>
+              <span class="meta-value">{{ props.job.salaryRange }}</span>
+            </li>
+          </ul>
+
+          <div v-if="props.job.summary" class="job-summary">
+            <h3>Role Overview</h3>
+            <p>{{ props.job.summary }}</p>
+          </div>
+
+          <div v-if="jobRequirements.length" class="job-requirements">
+            <h3>Key Requirements</h3>
+            <ul>
+              <li v-for="(item, index) in jobRequirements" :key="index">{{ item }}</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
     </div>
   </div>
 </template>
@@ -97,8 +136,50 @@ const answeredCount = computed(() => answers.value.length)
 const currentQuestion = computed(() => props.job.questions[currentQuestionIndex.value] ?? null)
 
 const isSessionActive = computed(() => currentStatus.value !== 'idle' && currentStatus.value !== 'stopped')
-const statusMessage = computed(() => mapStatusToMessage(currentStatus.value))
-const statusClass = computed(() => `status-${currentStatus.value}`)
+const statusInfo = computed(() => mapStatusInfo(currentStatus.value))
+
+type StatusDisplayKey = 'connecting' | 'connected' | 'failed'
+
+const STATUS_DISPLAY_MESSAGES: Record<StatusDisplayKey, string> = {
+  connecting: 'Connecting...',
+  connected: 'Connected',
+  failed: 'Connection failed',
+}
+
+const jobRequirements = computed(() =>
+  (props.job.requirements ?? [])
+    .map((item) => item?.trim())
+    .filter((item): item is string => Boolean(item && item.length > 0))
+)
+
+const jobInitials = computed(() => {
+  const words = (props.job.title ?? '').split(' ').filter(Boolean)
+  if (!words.length) {
+    return 'JD'
+  }
+  return words
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('')
+})
+
+function mapStatusInfo(status: NavtalkSessionStatus): { key: StatusDisplayKey; message: string } {
+  switch (status) {
+    case 'idle':
+    case 'connecting':
+      return { key: 'connecting', message: STATUS_DISPLAY_MESSAGES.connecting }
+    case 'connected':
+    case 'ready':
+    case 'listening':
+    case 'speaking':
+      return { key: 'connected', message: STATUS_DISPLAY_MESSAGES.connected }
+    case 'stopped':
+      return { key: 'connected', message: STATUS_DISPLAY_MESSAGES.connected }
+    case 'error':
+    default:
+      return { key: 'failed', message: STATUS_DISPLAY_MESSAGES.failed }
+  }
+}
 
 watch(
   () => props.job.id,
@@ -123,30 +204,6 @@ async function restartSession() {
   resetState()
   await startSession()
 }
-
-function mapStatusToMessage(status: NavtalkSessionStatus) {
-  switch (status) {
-    case 'idle':
-      return 'Waiting to connect'
-    case 'connecting':
-      return 'Connecting to the digital interviewer...'
-    case 'connected':
-      return 'Connection established. Preparing the session.'
-    case 'ready':
-      return 'Digital interviewer is ready.'
-    case 'listening':
-      return 'Listening for the candidate response.'
-    case 'speaking':
-      return 'Digital interviewer is speaking.'
-    case 'stopped':
-      return 'Session finished.'
-    case 'error':
-      return 'Connection error. Please try again.'
-    default:
-      return 'Updating status...'
-  }
-}
-
 
 async function startSession() {
   if (licenseMissing.value) {
@@ -410,26 +467,35 @@ function resetState() {
 
 .modal-card {
   position: relative;
-  width: min(660px, 94vw);
+  width: min(1080px, 96vw);
   height: calc(100vh - (var(--modal-padding) * 2));
   max-height: calc(100vh - (var(--modal-padding) * 2));
-  border-radius: 22px;
-  padding: clamp(1.4rem, 2.2vw, 2rem) clamp(1.1rem, 2vw, 1.75rem);
+  border-radius: 24px;
+  padding: clamp(1.5rem, 2.4vw, 2.25rem) clamp(1.4rem, 2.6vw, 2.4rem);
   background: radial-gradient(circle at top, #12152e, #090b1d);
   color: #f5f6ff;
   box-shadow: 0 24px 48px rgba(2, 6, 23, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
   overflow: hidden;
+}
+
+.modal-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(1.5rem, 2.5vw, 2.5rem);
+  align-items: stretch;
+  min-height: 0;
 }
 
 .video-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: clamp(1rem, 1.8vw, 1.5rem);
   flex: 1;
   min-height: 0;
+  align-items: center;
 }
 
 .video-shell {
@@ -506,6 +572,15 @@ function resetState() {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  width: 100%;
+}
+
+.control-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
 }
 
 .alert-stack {
@@ -515,35 +590,15 @@ function resetState() {
   min-height: 0;
 }
 
-.status-idle {
-  background: rgba(148, 163, 184, 0.6);
-}
-
 .status-connecting {
   background: rgba(96, 165, 250, 0.8);
 }
 
 .status-connected {
-  background: rgba(59, 130, 246, 0.85);
+  background: rgba(16, 185, 129, 0.85);
 }
 
-.status-ready {
-  background: rgba(16, 185, 129, 0.8);
-}
-
-.status-listening {
-  background: rgba(251, 191, 36, 0.85);
-}
-
-.status-speaking {
-  background: rgba(249, 115, 22, 0.85);
-}
-
-.status-stopped {
-  background: rgba(107, 114, 128, 0.7);
-}
-
-.status-error {
+.status-failed {
   background: rgba(239, 68, 68, 0.9);
 }
 
@@ -579,12 +634,177 @@ function resetState() {
   box-shadow: 0 12px 28px rgba(248, 113, 113, 0.25);
 }
 
+.job-section {
+  background: rgba(12, 18, 41, 0.65);
+  border-radius: 20px;
+  padding: clamp(1.25rem, 2.1vw, 1.9rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 1.8vw, 1.6rem);
+  overflow-y: auto;
+  min-height: 0;
+  color: rgba(226, 232, 240, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.job-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.job-badge {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.45), rgba(79, 70, 229, 0.55));
+  color: #eef2ff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.32);
+}
+
+.job-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.job-title-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.job-title-row h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #f9fafb;
+}
+
+.job-tag {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.22);
+  color: #e0f2fe;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.job-company {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(196, 210, 255, 0.92);
+}
+
+.job-meta {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.job-meta li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 255, 0.72);
+}
+
+.meta-value {
+  font-size: 0.95rem;
+  color: rgba(226, 232, 240, 0.95);
+  font-weight: 600;
+}
+
+.job-summary h3,
+.job-requirements h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 255, 0.82);
+}
+
+.job-summary p {
+  margin: 0;
+  line-height: 1.6;
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 0.95rem;
+}
+
+.job-requirements ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.job-requirements li {
+  position: relative;
+  padding-left: 1.1rem;
+  font-size: 0.94rem;
+  line-height: 1.5;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.job-requirements li::before {
+  content: '';
+  position: absolute;
+  left: 0.25rem;
+  top: 0.6rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: rgba(129, 140, 248, 0.65);
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.12);
+}
+
+@media (max-width: 1100px) {
+  .modal-card {
+    width: min(760px, 96vw);
+  }
+
+  .modal-layout {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  .job-section {
+    max-height: 45vh;
+  }
+}
+
 @media (max-width: 720px) {
   .modal-card {
     width: min(560px, 96vw);
     height: calc(100vh - (var(--modal-padding) * 2));
     max-height: calc(100vh - (var(--modal-padding) * 2));
     border-radius: 20px;
+  }
+
+  .modal-layout {
+    gap: 1.5rem;
   }
 
   .video-shell {
@@ -599,6 +819,10 @@ function resetState() {
 
   .end-call {
     width: 100%;
+  }
+
+  .job-section {
+    max-height: none;
   }
 }
 
@@ -617,3 +841,4 @@ function resetState() {
   }
 }
 </style>
+
