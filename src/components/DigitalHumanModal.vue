@@ -3,39 +3,40 @@
     <div class="modal-card">
       <div class="modal-layout">
         <section class="video-section">
-          <div class="video-shell">
-            <div class="video-frame">
-              <div v-if="!isSessionActive" class="video-placeholder">Connecting to the digital interviewer. Please hold...</div>
-              <video
-                v-show="isSessionActive"
-                ref="videoRef"
-                class="digital-human-video"
-                autoplay
-                playsinline
-              ></video>
-            </div>
-          </div>
-          <div class="control-stack">
-            <div class="status-strip">
-              <div class="status-bar">
-                <span class="status-indicator" :class="`status-${statusInfo.key}`"></span>
-                <span>{{ statusInfo.message }}</span>
+          <div class="video-stage">
+            <video
+              v-show="isSessionActive"
+              ref="videoRef"
+              class="digital-human-video"
+              autoplay
+              playsinline
+            ></video>
+            <div v-if="!isSessionActive" class="video-placeholder">Connecting to the digital interviewer. Please hold...</div>
+            <button
+              v-if="!hasEmittedComplete && isSessionActive"
+              class="end-call"
+              type="button"
+              @click="handleHangUp"
+            >
+              <span class="end-call-icon" aria-hidden="true">📞</span>
+              <span class="end-call-label">Hang Up</span>
+            </button>
+            <div class="status-foot">
+              <div class="status-indicator" :title="statusInfo.message">
+                <span
+                  class="status-dot"
+                  :class="`status-dot-${statusInfo.key}`"
+                  aria-hidden="true"
+                ></span>
+                <span class="sr-only">{{ statusInfo.message }}</span>
               </div>
-              <div class="alert-stack">
+              <div v-if="errorMessage || licenseMissing" class="alert-stack" role="status">
                 <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
                 <p v-if="licenseMissing" class="warning-message">
                   Update <code>src/config/navtalk.ts</code> with a valid LICENSE before starting an interview.
                 </p>
               </div>
             </div>
-            <button
-              v-if="!hasEmittedComplete && isSessionActive"
-              class="end-call"
-              type="button"
-              @click="handleCancel"
-            >
-              Hang Up
-            </button>
           </div>
         </section>
 
@@ -88,6 +89,8 @@ import {
   NAVTALK_CHARACTER_NAME,
   NAVTALK_LICENSE,
   NAVTALK_VOICE,
+  NAVTALK_CLOSING_MESSAGE,
+  NAVTALK_STATUS_MESSAGES,
   buildInterviewPrompt,
 } from '../config/navtalk'
 
@@ -113,8 +116,7 @@ const awaitingAnswer = ref(false)
 const conversation = ref<ConversationTurn[]>([])
 const lastInterviewerMessage = ref<string | null>(null)
 const hasGreeted = ref(false)
-const closingFallbackMessage =
-  'Thank you for taking the time to speak with me. This concludes the interview.'
+const closingFallbackMessage = NAVTALK_CLOSING_MESSAGE
 let closingRequested = false
 let closingReceived = false
 let resolveClosingPromise: (() => void) | null = null
@@ -132,7 +134,6 @@ const expectedQuestionCount = computed(() => {
     ? props.job.generatedQuestionCount
     : 5
 })
-const answeredCount = computed(() => answers.value.length)
 const currentQuestion = computed(() => props.job.questions[currentQuestionIndex.value] ?? null)
 
 const isSessionActive = computed(() => currentStatus.value !== 'idle' && currentStatus.value !== 'stopped')
@@ -140,11 +141,7 @@ const statusInfo = computed(() => mapStatusInfo(currentStatus.value))
 
 type StatusDisplayKey = 'connecting' | 'connected' | 'failed'
 
-const STATUS_DISPLAY_MESSAGES: Record<StatusDisplayKey, string> = {
-  connecting: 'Connecting...',
-  connected: 'Connected',
-  failed: 'Connection failed',
-}
+const STATUS_DISPLAY_MESSAGES: Record<StatusDisplayKey, string> = NAVTALK_STATUS_MESSAGES
 
 const jobRequirements = computed(() =>
   (props.job.requirements ?? [])
@@ -188,12 +185,6 @@ watch(
   },
   { immediate: true }
 )
-
-watch(answeredCount, (count) => {
-  if (count >= expectedQuestionCount.value) {
-    finalizeInterview().catch((error) => console.error(error))
-  }
-})
 
 onBeforeUnmount(async () => {
   await stopSession()
@@ -371,11 +362,35 @@ function resetClosingState() {
   closingReceived = false
 }
 
-async function finalizeInterview() {
+async function finalizeInterview(options: { immediate?: boolean } = {}) {
+  const { immediate = false } = options
+
   if (hasEmittedComplete.value) {
     return
   }
   hasEmittedComplete.value = true
+
+  if (immediate) {
+    resetClosingState()
+
+    const lastTurn = conversation.value[conversation.value.length - 1]
+    if (!lastTurn || lastTurn.speaker !== 'interviewer' || lastTurn.message !== closingFallbackMessage) {
+      conversation.value = [
+        ...conversation.value,
+        { speaker: 'interviewer', message: closingFallbackMessage },
+      ]
+    }
+
+    await stopSession()
+
+    emit('complete', {
+      conversation: [...conversation.value],
+      answers: [...answers.value],
+      completedAt: new Date().toISOString(),
+    })
+    return
+  }
+
   closingRequested = true
   closingReceived = false
 
@@ -415,25 +430,29 @@ async function finalizeInterview() {
     ]
   }
 
-  try {
-    await session.value?.stop()
-  } catch (error) {
-    console.error('Failed to stop session during finalize', error)
-  } finally {
-    emit('complete', {
-      conversation: [...conversation.value],
-      answers: [...answers.value],
-      completedAt: new Date().toISOString(),
-    })
-  }
+  await stopSession()
+
+  emit('complete', {
+    conversation: [...conversation.value],
+    answers: [...answers.value],
+    completedAt: new Date().toISOString(),
+  })
 }
 
 
-async function handleCancel() {
-  hasEmittedComplete.value = true
-  await stopSession()
-  resetState()
-  emit('cancel')
+async function handleHangUp() {
+  if (hasEmittedComplete.value) {
+    return
+  }
+
+  if (!session.value) {
+    await stopSession()
+    resetState()
+    emit('cancel')
+    return
+  }
+
+  await finalizeInterview({ immediate: true })
 }
 
 function resetState() {
@@ -456,24 +475,22 @@ function resetState() {
   --modal-padding: clamp(0.75rem, 1.8vw, 1.5rem);
   position: fixed;
   inset: 0;
-  background: rgba(6, 12, 32, 0.7);
+  background: rgba(6, 12, 32, 0.72);
   display: flex;
-  align-items: stretch;
   justify-content: center;
+  align-items: stretch;
   padding: var(--modal-padding);
   z-index: 1000;
-  overflow: hidden;
 }
 
 .modal-card {
-  position: relative;
   width: min(1080px, 96vw);
   height: calc(100vh - (var(--modal-padding) * 2));
   max-height: calc(100vh - (var(--modal-padding) * 2));
-  border-radius: 24px;
-  padding: clamp(1.5rem, 2.4vw, 2.25rem) clamp(1.4rem, 2.6vw, 2.4rem);
   background: radial-gradient(circle at top, #12152e, #090b1d);
   color: #f5f6ff;
+  border-radius: 24px;
+  padding: clamp(1.5rem, 2.4vw, 2.3rem);
   box-shadow: 0 24px 48px rgba(2, 6, 23, 0.4);
   display: flex;
   flex-direction: column;
@@ -483,44 +500,34 @@ function resetState() {
 .modal-layout {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(1.5rem, 2.5vw, 2.5rem);
-  align-items: stretch;
   min-height: 0;
+  align-items: stretch;
 }
 
 .video-section {
   display: flex;
   flex-direction: column;
-  gap: clamp(1rem, 1.8vw, 1.5rem);
-  flex: 1;
+  gap: clamp(1rem, 1.8vw, 1.4rem);
   min-height: 0;
-  align-items: center;
-}
-
-.video-shell {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  width: 100%;
-}
-
-.video-frame {
   position: relative;
-  height: 100%;
-  width: auto;
-  aspect-ratio: 9 / 16;
-  max-width: min(100%, calc((100vh - (var(--modal-padding) * 2)) * 0.52));
-  border-radius: 24px;
+}
+
+.video-stage {
+  position: relative;
+  flex: 1;
+  border-radius: 28px;
   overflow: hidden;
-  border: 1px solid rgba(125, 145, 255, 0.28);
-  background: rgba(15, 23, 42, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
+  background: #020617;
+  box-shadow: 0 18px 32px rgba(8, 12, 32, 0.45);
+}
+
+.digital-human-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .video-placeholder {
@@ -529,190 +536,210 @@ function resetState() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.5rem;
-  color: rgba(238, 242, 255, 0.7);
-  font-size: 1rem;
+  padding: clamp(1.8rem, 4vw, 2.5rem);
   text-align: center;
-  background: radial-gradient(circle at center, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(8, 11, 24, 0.95));
+  color: rgba(226, 232, 240, 0.86);
+  font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+  line-height: 1.6;
 }
 
-.digital-human-video {
+.end-call {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: black;
+  left: 50%;
+  bottom: clamp(1rem, 2.4vw, 1.8rem);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.65rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 14px 28px rgba(239, 68, 68, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.end-call:hover,
+.end-call:focus-visible {
+  transform: translateX(-50%) scale(1.02);
+  box-shadow: 0 16px 32px rgba(239, 68, 68, 0.45);
+}
+
+.end-call:focus-visible {
+  outline: 2px solid rgba(248, 113, 113, 0.8);
+  outline-offset: 4px;
+}
+
+.end-call-icon {
+  font-size: 1.05rem;
+}
+
+.status-foot {
+  position: absolute;
+  left: clamp(1rem, 2.3vw, 1.6rem);
+  bottom: clamp(1rem, 2.3vw, 1.6rem);
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
 }
 
 .status-indicator {
-  width: 0.8rem;
-  height: 0.8rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.status-bar {
-  margin-top: 0.5rem;
-  align-self: stretch;
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.95rem;
-  color: rgba(238, 242, 255, 0.92);
-  background: rgba(17, 24, 39, 0.55);
-  padding: 0.6rem 1rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
-.status-strip {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  width: 100%;
+.status-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: #64748b;
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.18);
 }
 
-.control-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
+.status-dot-connecting {
+  background: #38bdf8;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.18);
+}
+
+.status-dot-connected {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+}
+
+.status-dot-failed {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .alert-stack {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  min-height: 0;
-}
-
-.status-connecting {
-  background: rgba(96, 165, 250, 0.8);
-}
-
-.status-connected {
-  background: rgba(16, 185, 129, 0.85);
-}
-
-.status-failed {
-  background: rgba(239, 68, 68, 0.9);
+  pointer-events: auto;
 }
 
 .error-message {
   margin: 0;
+  font-size: 0.82rem;
   color: #fca5a5;
-  font-size: 0.9rem;
 }
 
 .warning-message {
   margin: 0;
-  color: #fbbf24;
-  font-size: 0.9rem;
-}
-
-.end-call {
-  align-self: center;
-  padding: 0.85rem 2.5rem;
-  border-radius: 999px;
-  border: 1px solid rgba(248, 113, 113, 0.4);
-  background: rgba(248, 113, 113, 0.18);
-  color: #fecaca;
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.end-call:hover {
-  transform: translateY(-1px);
-  border-color: rgba(248, 113, 113, 0.7);
-  box-shadow: 0 12px 28px rgba(248, 113, 113, 0.25);
+  font-size: 0.82rem;
+  color: #fcd34d;
 }
 
 .job-section {
-  background: rgba(12, 18, 41, 0.65);
-  border-radius: 20px;
-  padding: clamp(1.25rem, 2.1vw, 1.9rem);
   display: flex;
   flex-direction: column;
-  gap: clamp(1rem, 1.8vw, 1.6rem);
-  overflow-y: auto;
+  gap: clamp(1.2rem, 2.2vw, 1.6rem);
+  padding: clamp(1.5rem, 2.3vw, 2.1rem);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(9, 12, 28, 0.92));
+  border-radius: 28px;
+  box-shadow: 0 18px 32px rgba(8, 12, 32, 0.45);
   min-height: 0;
-  color: rgba(226, 232, 240, 0.95);
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 255, 0.08);
-  backdrop-filter: blur(12px);
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
+.job-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.job-section::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: 999px;
+}
+
+.job-section::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.45);
+  border-radius: 999px;
 }
 
 .job-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(1rem, 2vw, 1.4rem);
+  margin-bottom: clamp(1.2rem, 2vw, 1.6rem);
 }
 
 .job-badge {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.45), rgba(79, 70, 229, 0.55));
-  color: #eef2ff;
-  font-weight: 700;
-  font-size: 1.1rem;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: clamp(3.25rem, 5vw, 3.75rem);
+  aspect-ratio: 1;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.35);
+  font-weight: 600;
   letter-spacing: 0.08em;
+  font-size: clamp(1.1rem, 1.9vw, 1.35rem);
   text-transform: uppercase;
-  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.32);
 }
 
 .job-heading {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  min-width: 0;
+  gap: 0.35rem;
 }
 
 .job-title-row {
   display: flex;
-  gap: 0.75rem;
   align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .job-title-row h2 {
   margin: 0;
-  font-size: clamp(1.25rem, 2vw, 1.6rem);
-  font-weight: 700;
+  font-size: clamp(1.35rem, 2.2vw, 1.6rem);
+  font-weight: 600;
   letter-spacing: 0.01em;
-  color: #f9fafb;
 }
 
 .job-tag {
-  padding: 0.35rem 0.75rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  background: rgba(96, 165, 250, 0.22);
-  color: #e0f2fe;
+  background: rgba(129, 140, 248, 0.18);
+  color: rgba(226, 232, 240, 0.9);
   font-size: 0.8rem;
-  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .job-company {
   margin: 0;
+  color: rgba(226, 232, 240, 0.78);
   font-size: 0.95rem;
-  color: rgba(196, 210, 255, 0.92);
 }
 
 .job-meta {
   list-style: none;
+  margin: 0 0 clamp(1.3rem, 2.2vw, 1.6rem);
   padding: 0;
-  margin: 0;
   display: grid;
   gap: 0.85rem;
 }
@@ -724,32 +751,44 @@ function resetState() {
 }
 
 .meta-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(148, 163, 255, 0.72);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: rgba(148, 163, 184, 0.7);
 }
 
 .meta-value {
   font-size: 0.95rem;
   color: rgba(226, 232, 240, 0.95);
-  font-weight: 600;
+  font-weight: 500;
+}
+
+.job-summary,
+.job-requirements {
+  background: rgba(15, 23, 42, 0.55);
+  border-radius: 20px;
+  padding: clamp(1rem, 1.8vw, 1.35rem);
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08);
+}
+
+.job-summary + .job-requirements {
+  margin-top: clamp(1rem, 1.8vw, 1.35rem);
 }
 
 .job-summary h3,
 .job-requirements h3 {
-  margin: 0 0 0.6rem;
-  font-size: 0.95rem;
-  letter-spacing: 0.06em;
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(148, 163, 255, 0.82);
+  color: rgba(248, 250, 252, 0.92);
 }
 
 .job-summary p {
   margin: 0;
   line-height: 1.6;
-  color: rgba(226, 232, 240, 0.92);
-  font-size: 0.95rem;
+  color: rgba(226, 232, 240, 0.88);
+  font-size: 0.96rem;
 }
 
 .job-requirements ul {
@@ -757,15 +796,15 @@ function resetState() {
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.65rem;
+  gap: 0.6rem;
 }
 
 .job-requirements li {
   position: relative;
   padding-left: 1.1rem;
-  font-size: 0.94rem;
+  font-size: 0.93rem;
   line-height: 1.5;
-  color: rgba(226, 232, 240, 0.9);
+  color: rgba(226, 232, 240, 0.88);
 }
 
 .job-requirements li::before {
@@ -782,62 +821,63 @@ function resetState() {
 
 @media (max-width: 1100px) {
   .modal-card {
-    width: min(760px, 96vw);
+    width: min(860px, 96vw);
   }
 
   .modal-layout {
     grid-template-columns: 1fr;
-    gap: 1.75rem;
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .video-stage {
+    min-height: clamp(320px, 56vh, 560px);
   }
 
   .job-section {
-    max-height: 45vh;
+    min-height: clamp(320px, 46vh, 520px);
+  }
+
+  .status-foot {
+    left: clamp(0.9rem, 2.3vw, 1.5rem);
+    bottom: clamp(0.9rem, 2.3vw, 1.5rem);
   }
 }
 
 @media (max-width: 720px) {
   .modal-card {
     width: min(560px, 96vw);
-    height: calc(100vh - (var(--modal-padding) * 2));
-    max-height: calc(100vh - (var(--modal-padding) * 2));
     border-radius: 20px;
+    padding: clamp(1.25rem, 3vw, 1.6rem);
   }
 
   .modal-layout {
     gap: 1.5rem;
   }
 
-  .video-shell {
-    align-items: center;
-  }
-
-  .video-frame {
-    width: 100%;
-    height: auto;
-    max-width: 100%;
-  }
-
-  .end-call {
-    width: 100%;
+  .video-stage {
+    min-height: clamp(280px, 55vh, 520px);
   }
 
   .job-section {
-    max-height: none;
+    padding: clamp(1.1rem, 3vw, 1.5rem);
+  }
+
+  .end-call {
+    bottom: clamp(0.85rem, 2.5vw, 1.2rem);
   }
 }
 
-@media (max-height: 600px) {
+@media (max-height: 640px) {
   .modal-overlay {
     align-items: stretch;
   }
 
   .modal-card {
-    height: calc(100vh - (var(--modal-padding) * 2));
-    max-height: calc(100vh - (var(--modal-padding) * 2));
+    border-radius: 20px;
   }
 
-  .video-frame {
-    flex: 1;
+  .video-stage {
+    min-height: clamp(260px, 50vh, 460px);
   }
 }
 </style>

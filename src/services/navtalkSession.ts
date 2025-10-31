@@ -166,7 +166,7 @@ export class NavtalkSession {
 
     this.resultSocket.onerror = (event) => {
       console.error('Result WebSocket error', event)
-      this.callbacks.onError?.('Video stream connection error. Please try again.')
+      this.callbacks.onError?.('')
     }
   }
 
@@ -205,7 +205,7 @@ export class NavtalkSession {
       if (this.peerConnection.connectionState === 'connected') {
         this.setStatus('ready')
       } else if (this.peerConnection.connectionState === 'failed') {
-        this.callbacks.onError?.('Video stream failed. Please refresh and try again.')
+        this.callbacks.onError?.('')
       }
     }
 
