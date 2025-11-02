@@ -49,6 +49,7 @@ export class NavtalkSession {
   private responseBuffer = new Map<string, string>()
   private status: NavtalkSessionStatus = 'idle'
   private isRecording = false
+  private configuration: RTCConfiguration = { ...ICE_CONFIGURATION }
 
   constructor(options: NavtalkSessionOptions) {
     this.license = options.license
@@ -151,7 +152,8 @@ export class NavtalkSession {
         const message = JSON.parse(event.data as string)
         switch (message.type) {
           case 'offer':
-            this.handleOffer(message)
+            // Handle asynchronously; no need to await in event loop
+            void this.handleOffer(message)
             break
           case 'iceCandidate':
             this.handleIceCandidate(message)
@@ -173,8 +175,24 @@ export class NavtalkSession {
   private async handleOffer(message: any) {
     const offer = new RTCSessionDescription(message.sdp)
 
+    // Try to obtain TURN/STUN servers from the transfer service.
+    // Falls back to default STUN-only configuration on failure.
+    try {
+      const endpoint = `https://${this.baseUrl}/api/webrtc/generate-ice-servers`
+      const res = await fetch(endpoint, { method: 'POST' })
+      if (res.ok) {
+        const data: any = await res.json()
+        const servers = data?.data?.iceServers ?? data?.iceServers
+        if (Array.isArray(servers) && servers.length > 0) {
+          this.configuration = { iceServers: servers }
+        }
+      }
+    } catch (e) {
+      // keep default configuration
+    }
+
     this.cleanupPeerConnection()
-    this.peerConnection = new RTCPeerConnection(ICE_CONFIGURATION)
+    this.peerConnection = new RTCPeerConnection(this.configuration)
 
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate && this.resultSocket?.readyState === WebSocket.OPEN) {
