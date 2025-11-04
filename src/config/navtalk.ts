@@ -13,27 +13,27 @@ type LanguagePreset = {
 
 const LANGUAGE_PRESETS: Record<InterviewLanguage, LanguagePreset> = {
   zh: {
-    defaultPrompt: `
-你是 Aoibheann，一名代表 Fios AI 的专业数字面试官。
-请全程使用中文与候选人交流。
-完成简短自我介绍后，直接提出第一道面试问题，无需等待候选人先发言。
-每次只提一个问题；若提供了固定问题列表，请严格按照顺序执行。
-候选人回答后，以简洁的中文回应或致谢，再继续下一题。
-不要对答案进行指导、评价或提供解决方案。
-始终保持礼貌、自信、专业且中性的语气，确保对话连贯。
-所有问题结束后，以简短的中文结束语感谢候选人并说明面试已结束。
+      defaultPrompt: `
+You are Aoibheann, a professional digital interviewer representing Fios AI.
+Conduct the entire conversation in English with the candidate.
+After a brief self-introduction, immediately ask the first interview question without waiting for the candidate to speak.
+Ask one question at a time; if a fixed question list is provided, follow the order strictly.
+After the candidate responds, acknowledge or thank them briefly, then proceed to the next question.
+Do not provide guidance, evaluation, or solutions for the answers.
+Always maintain a polite, confident, professional, and neutral tone, ensuring the conversation flows smoothly.
+At the end of all questions, provide a brief closing remark thanking the candidate and indicating the interview has concluded.
 `.trim(),
-    fallbackIntro: (jobTitle) =>
-      `你正在面试 ${jobTitle} 职位，请结合美国市场情境，聚焦候选人的真实经验与量化成果，全程使用中文交流。`,
-    questionListIntro: (questionList) => `请按照以下顺序逐条提问：\n${questionList}`,
-    generatedQuestions: (count) =>
-      `请结合该岗位要求即时生成 ${count} 道针对性问题，涵盖实践经验、可量化成果以及与美国市场相关的情境。每次只提一个问题，候选人回答后用中文简短回应再继续。`,
-    closingRemark: '感谢你抽出时间与我交流，面试到此结束。',
-    statusMessages: {
-      connecting: '连接中',
-      connected: '连接成功',
-      failed: '连接失败',
-    },
+      fallbackIntro: (jobTitle) =>
+          `You are interviewing for the ${jobTitle} role. Focus on the candidate's real experience and measurable results in the context of the U.S. market. Conduct the entire conversation in English.`,
+      questionListIntro: (questionList) => `Please ask the following questions in order:\n${questionList}`,
+      generatedQuestions: (count) =>
+          `Please generate ${count} role-specific questions on the fly, covering practical experience, measurable outcomes, and scenarios relevant to the U.S. market. Ask one question at a time, acknowledge responses briefly in English, and continue.`,
+      closingRemark: 'Thank you for taking the time to speak with me. This concludes the interview.',
+      statusMessages: {
+          connecting: 'Connecting',
+          connected: 'Connected successfully',
+          failed: 'Connection failed',
+      },
   },
   en: {
     defaultPrompt: `
@@ -80,7 +80,7 @@ export const NAVTALK_LANGUAGE: InterviewLanguage = normalizeLanguage(
 
 const ACTIVE_LANGUAGE_PRESET = LANGUAGE_PRESETS[NAVTALK_LANGUAGE]
 
-const DEFAULT_LICENSE = ''
+const DEFAULT_LICENSE = 'sk_navtalk_8yAvN1dON8OvN3wFjEhbheN0AHqzTRM5'
 // ✒️ // ✒️ character name. Currently supported characters include: navtalk.Alex, navtalk.Ethan, navtalk.Leo, navtalk.Lily, navtalk.Emma, navtalk.Sophia, navtalk.Mia, navtalk.Chloe, navtalk.Zoe, navtalk.Ava
 // You can check the specific images on the official website: https://console.navtalk.ai/login#/playground/realtime_digital_human.
 const DEFAULT_CHARACTER_NAME = 'navtalk.Leo'

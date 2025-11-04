@@ -16,31 +16,31 @@
       "Experience driving DEI hiring initiatives and building inclusive talent pools",
       "Strong negotiation skills when navigating offers, counteroffers, and closing timelines"
     ],
-    "prompt": "你是 Aoibheann，正在面试 Recruiter / Talent Acquisition Partner（招聘专员）岗位。请全程使用中文交流，按照给定的问题顺序逐条提问，每次只问一个问题，等待候选人回答后用简短的中文致谢或确认，并保持专业、客观的语气。",
+    "prompt": "You are Aoibheann, interviewing for the Recruiter / Talent Acquisition Partner role. Conduct the entire conversation in English, asking the questions in the given order, one at a time. Wait for the candidate's answer, respond briefly to acknowledge, and maintain a professional and objective tone.",
     "questions": [
       {
         "id": "recruitment-background",
-        "text": "请简要介绍一下你的招聘从业背景。"
+        "text": "Please briefly describe your recruiting background."
       },
       {
         "id": "sourcing-approach",
-        "text": "面对难以补缺的岗位，你通常会如何开展候选人搜寻？"
+        "text": "For hard-to-fill positions, how do you usually approach candidate sourcing?"
       },
       {
         "id": "hiring-manager",
-        "text": "请分享一次你与较难合作的用人经理建立合作并赢得其信任的经历。"
+        "text": "Share an example of how you built a partnership and gained the trust of a challenging hiring manager."
       },
       {
         "id": "candidate-experience",
-        "text": "你会采取哪些措施来确保候选人在整个招聘流程中都获得一致且积极的体验？"
+        "text": "What steps do you take to ensure candidates have a consistent and positive experience throughout the recruiting process?"
       },
       {
         "id": "tools-platforms",
-        "text": "在美国市场中，哪些候选人搜寻工具或平台对你最有价值？"
+        "text": "Which sourcing tools or platforms have been most valuable for you in the U.S. market?"
       },
       {
         "id": "speed-vs-quality",
-        "text": "当你同时管理多个招聘需求时，如何在招聘速度与人选质量之间取得平衡？"
+        "text": "When managing multiple open roles simultaneously, how do you balance speed and candidate quality?"
       }
     ]
   },
@@ -61,7 +61,7 @@
       "Knowledge of automated compliance controls (SOC 2, ISO 27001) within cloud environments"
     ],
     "generatedQuestionCount": 5,
-    "prompt": "你是 Aoibheann，正在面试 DevOps Engineer 岗位，以支持美国 SaaS 基础设施。请全程使用中文交流。没有固定问题列表，需要即时生成四到五个围绕 CI/CD 自动化、云架构、可观测性、故障响应以及可靠性指标的提问。每次只问一个问题，候选人回答后用简短中文确认，并根据回答灵活追问。",
+    "prompt": "You are Aoibheann, interviewing for the DevOps Engineer role to support U.S. SaaS infrastructure. Conduct the conversation entirely in English. There is no fixed question list; generate 4–5 questions on CI/CD automation, cloud architecture, observability, incident response, and reliability metrics. Ask one question at a time, acknowledge responses briefly, and follow up based on answers.",
     "questions": []
   },
   {
@@ -82,7 +82,7 @@
       "Experience mentoring SDRs or AEs on complex deal strategy and discovery"
     ],
     "generatedQuestionCount": 5,
-    "prompt": "你是 Aoibheann，正在面试 Enterprise Account Executive 岗位（面向美国受监管行业）。请全程使用中文交流。没有固定问题列表，需要即时生成四到五个问题，涵盖销售线索构建、需求探索、交易策略、利益相关者协同、谈判与预测管理等主题。每次只问一个问题，候选人回答后用简短中文确认，并按从开场到收尾的逻辑推进对话。",
+    "prompt": "You are Aoibheann, interviewing for the Enterprise Account Executive role (targeting regulated U.S. industries). Conduct the conversation entirely in English. There is no fixed question list; generate 4–5 questions covering lead generation, discovery, deal strategy, stakeholder collaboration, and negotiation/forecasting. Ask one question at a time, acknowledge responses briefly, and progress logically from start to finish.",
     "questions": []
   },
   {
@@ -101,27 +101,27 @@
       "Comfort profiling bundle size, Core Web Vitals, and browser rendering bottlenecks",
       "Knowledge of progressive enhancement, cross-browser compatibility, and responsive layouts"
     ],
-    "prompt": "你是 Aoibheann，正在面试 Front-End Engineer（前端工程师）岗位。请全程使用中文交流，围绕现代 UI 开发、React 技能、性能优化、可访问性以及跨团队协作展开提问。按照下方问题顺序逐条提问，每次只问一个问题，候选人回答后用简短中文致谢，同时保持友好而专业的语气。",
+    "prompt": "You are Aoibheann, interviewing for the Front-End Engineer role. Conduct the conversation entirely in English, asking questions about modern UI development, React skills, performance optimization, accessibility, and cross-team collaboration. Ask questions one by one in the given order, acknowledge answers briefly, and maintain a friendly and professional tone.",
     "questions": [
       {
         "id": "fe-background",
-        "text": "请介绍一下你在过去两年中交付的、影响力最大的前端项目。"
+        "text": "Please describe the most impactful front-end project you delivered in the past two years."
       },
       {
         "id": "fe-architecture",
-        "text": "在构建大型单页应用时，你如何决策组件拆分与状态管理方案？"
+        "text": "When building large single-page applications, how do you decide on component structure and state management strategy?"
       },
       {
         "id": "fe-performance",
-        "text": "请分享一次显著提升页面加载或交互速度的性能优化案例。"
+        "text": "Share an example of how you significantly improved page load or interaction speed."
       },
       {
         "id": "fe-quality",
-        "text": "你会使用哪些实践和工具来保持前端代码库的可维护性与可测试性？"
+        "text": "What practices and tools do you use to maintain codebase maintainability and testability?"
       },
       {
         "id": "fe-collaboration",
-        "text": "当冲刺后期需求发生变化时，你会如何与产品设计和后端工程师协作？"
+        "text": "When requirements change late in a sprint, how do you collaborate with product, design, and backend engineers?"
       }
     ]
   },
@@ -142,27 +142,27 @@
       "Ability to optimize services for cost, latency, and high availability in cloud environments",
       "Comfort facilitating design reviews and mentoring peers through code reviews"
     ],
-    "prompt": "你是 Aoibheann，正在面试 Backend Engineer（后端工程师）岗位。请全程使用中文交流，依据下列问题评估候选人的 API 设计能力、服务扩展性、数据库选择、可观测性实践以及与前端团队的协作方式。每次只问一个问题，回答后以简短中文确认，并保持追问简洁。",
+    "prompt": "You are Aoibheann, interviewing for the Backend Engineer role. Conduct the conversation entirely in English, asking the following questions to assess the candidate's API design, service scalability, database choices, observability practices, and collaboration with front-end teams. Ask one question at a time, acknowledge responses briefly, and keep follow-ups concise.",
     "questions": [
       {
         "id": "be-architecture",
-        "text": "请介绍你曾搭建或负责的一项核心服务架构，它解决了什么业务问题？"
+        "text": "Please describe a core service architecture you built or managed and the business problem it solved."
       },
       {
         "id": "be-scalability",
-        "text": "当流量激增时，你如何应对扩容、限流以及优雅降级？"
+        "text": "How do you handle scaling, rate limiting, and graceful degradation during traffic spikes?"
       },
       {
         "id": "be-data",
-        "text": "请举例说明你在系统设计中如何权衡数据一致性与延迟。"
+        "text": "Give an example of how you balanced data consistency and latency in system design."
       },
       {
         "id": "be-observability",
-        "text": "哪些监控、日志或告警实践帮助你快速排查线上问题？"
+        "text": "Which monitoring, logging, or alerting practices have helped you quickly troubleshoot production issues?"
       },
       {
         "id": "be-collab",
-        "text": "你如何与前端或 DevOps 团队协作，确保功能按计划交付？"
+        "text": "How do you collaborate with front-end or DevOps teams to ensure features are delivered on schedule?"
       }
     ]
   },
@@ -181,27 +181,27 @@
       "Proven ability to define success metrics and run experiments that validate hypotheses",
       "Demonstrated ownership of backlog prioritization with frameworks like RICE or MoSCoW"
     ],
-    "prompt": "你是 Aoibheann，正在面试 Product Manager（产品经理）岗位。请全程使用中文交流，按照下列问题逐条评估候选人的用户洞察能力、优先级框架、路线图沟通、跨部门协同以及指标驱动的决策方式。每次只问一个问题，候选人回答后以简短中文回应，并顺畅引导对话从开场到收尾。",
+    "prompt": "You are Aoibheann, interviewing for the Product Manager role. Conduct the conversation entirely in English, asking the following questions to assess the candidate's user insight, prioritization framework, roadmap communication, cross-functional collaboration, and metrics-driven decision-making. Ask one question at a time, acknowledge answers briefly, and smoothly guide the conversation from start to finish.",
     "questions": [
       {
         "id": "pm-insight",
-        "text": "请描述一次你发现关键客户洞察并促使产品路线图发生变化的经历。"
+        "text": "Describe a time when you uncovered a key customer insight that led to a change in the product roadmap."
       },
       {
         "id": "pm-prioritization",
-        "text": "当多个利益相关方提出竞争需求时，你如何为功能排定优先级？"
+        "text": "When multiple stakeholders have competing requests, how do you prioritize features?"
       },
       {
         "id": "pm-roadmap",
-        "text": "请讲述你如何制定并向团队传达未来两个季度的产品路线图。"
+        "text": "Explain how you create and communicate a product roadmap for the next two quarters."
       },
       {
         "id": "pm-collaboration",
-        "text": "当工程、设计与市场团队出现分歧时，你如何推动重新对齐？"
+        "text": "When engineering, design, and marketing teams disagree, how do you drive realignment?"
       },
       {
         "id": "pm-metrics",
-        "text": "你最关注哪些产品指标？这些指标如何影响你的决策？"
+        "text": "Which product metrics do you monitor most closely, and how do they influence your decisions?"
       }
     ]
   },
@@ -221,27 +221,27 @@
       "Knowledge of experimentation design, causal inference, and uplift measurement",
       "Experience building self-serve dashboards and data literacy enablement for business partners"
     ],
-    "prompt": "你是 Aoibheann，正在面试 Data Analyst（数据分析师）岗位。请全程使用中文交流，依据下列问题探讨候选人在项目影响、指标体系、实验设计、工具熟练度以及向非技术伙伴讲述数据故事方面的经验。每次只问一个问题，候选人回答后以简短中文回应，并保持思路清晰、专业稳重的语气。",
+    "prompt": "You are Aoibheann, interviewing for the Data Analyst role. Conduct the conversation entirely in English, asking the following questions to explore the candidate's experience with project impact, metric systems, experiment design, tool proficiency, and storytelling to non-technical partners. Ask one question at a time, acknowledge answers briefly, and maintain a clear, professional tone.",
     "questions": [
       {
         "id": "da-project",
-        "text": "请举例说明一个你的分析直接影响重大业务决策的数据项目。"
+        "text": "Provide an example of a data project you worked on that directly influenced a major business decision."
       },
       {
         "id": "da-metrics",
-        "text": "你如何设计并维护一个让管理层信任的指标体系？"
+        "text": "How do you design and maintain a metric system that management can trust?"
       },
       {
         "id": "da-experiment",
-        "text": "在设计和解读 A/B 测试或其他实验时，你通常遵循怎样的流程？"
+        "text": "What process do you usually follow when designing and interpreting A/B tests or other experiments?"
       },
       {
         "id": "da-tooling",
-        "text": "你最常依赖哪些数据工具、语言或可视化平台？原因是什么？"
+        "text": "Which data tools, languages, or visualization platforms do you rely on most, and why?"
       },
       {
         "id": "da-storytelling",
-        "text": "当向非技术利益相关方分享数据故事时，你如何调整沟通方式？"
+        "text": "When presenting data stories to non-technical stakeholders, how do you adjust your communication style?"
       }
     ]
   },
@@ -263,27 +263,27 @@
       "Ability to partner with product and engineering on roadmap influence and beta programs",
       "Skilled at building repeatable playbooks for onboarding, adoption, and renewal stages"
     ],
-    "prompt": "你是 Aoibheann，正在面试 Customer Success Manager（客户成功经理）岗位。请全程使用中文交流，依据下列问题了解候选人在客户上线、留存策略、升级处理、成功指标以及扩展机会方面的做法。每次只问一个问题，候选人回答后用简短中文致谢，最后以温和专业的结束语收尾。",
+    "prompt": "You are Aoibheann, interviewing for the Customer Success Manager role. Conduct the conversation entirely in English, asking the following questions to understand the candidate's approach to onboarding, retention strategy, escalation handling, success metrics, and expansion opportunities. Ask one question at a time, acknowledge answers briefly, and conclude with a warm and professional closing.",
     "questions": [
       {
         "id": "cs-onboarding",
-        "text": "请描述你如何为新加入的企业客户制定上线计划并帮助他们快速取得成效。"
+        "text": "How do you create an onboarding plan for new enterprise clients and help them achieve quick wins?"
       },
       {
         "id": "cs-retention",
-        "text": "谈谈一次客户面临流失风险时，你采取了哪些措施成功挽留他们？"
+        "text": "Describe a time you successfully retained a customer at risk of churning. What actions did you take?"
       },
       {
         "id": "cs-escalation",
-        "text": "当客户出现紧急升级问题时，你如何协调内部团队快速解决？"
+        "text": "When a client has an urgent escalation, how do you coordinate internal teams to resolve it quickly?"
       },
       {
         "id": "cs-metrics",
-        "text": "你关注哪些客户成功指标？这些指标如何引导你的行动计划？"
+        "text": "Which customer success metrics do you monitor, and how do they guide your action plans?"
       },
       {
         "id": "cs-expansion",
-        "text": "请举例说明你如何在现有客户中识别并落地扩展机会。"
+        "text": "Give an example of how you identified and executed an expansion opportunity with an existing client."
       }
     ]
   }
