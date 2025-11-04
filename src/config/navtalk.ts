@@ -80,7 +80,7 @@ export const NAVTALK_LANGUAGE: InterviewLanguage = normalizeLanguage(
 
 const ACTIVE_LANGUAGE_PRESET = LANGUAGE_PRESETS[NAVTALK_LANGUAGE]
 
-const DEFAULT_LICENSE = 'sk_navtalk_8yAvN1dON8OvN3wFjEhbheN0AHqzTRM5'
+const DEFAULT_LICENSE = ''
 // ✒️ // ✒️ character name. Currently supported characters include: navtalk.Alex, navtalk.Ethan, navtalk.Leo, navtalk.Lily, navtalk.Emma, navtalk.Sophia, navtalk.Mia, navtalk.Chloe, navtalk.Zoe, navtalk.Ava
 // You can check the specific images on the official website: https://console.navtalk.ai/login#/playground/realtime_digital_human.
 const DEFAULT_CHARACTER_NAME = 'navtalk.Leo'
