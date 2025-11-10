@@ -83,10 +83,10 @@ const ACTIVE_LANGUAGE_PRESET = LANGUAGE_PRESETS[NAVTALK_LANGUAGE]
 const DEFAULT_LICENSE = ''
 // ✒️ // ✒️ character name. Currently supported characters include: navtalk.Alex, navtalk.Ethan, navtalk.Leo, navtalk.Lily, navtalk.Emma, navtalk.Sophia, navtalk.Mia, navtalk.Chloe, navtalk.Zoe, navtalk.Ava
 // You can check the specific images on the official website: https://console.navtalk.ai/login#/playground/realtime_digital_human.
-const DEFAULT_CHARACTER_NAME = 'navtalk.Leo'
+const DEFAULT_CHARACTER_NAME = 'navtalk.Lauren'
 // ✒️ voice. Currently supported voices include: alloy, ash, ballad, cedar, coral, echo, marin, sage, shimmer, verse
 // You can check the specific voices on the official website: https://console.navtalk.ai/login#/playground/realtime_digital_human.
-const DEFAULT_VOICE = 'alloy'
+const DEFAULT_VOICE = 'sage'
 const DEFAULT_PROMPT = ACTIVE_LANGUAGE_PRESET.defaultPrompt
 const DEFAULT_BASE_URL = 'transfer.navtalk.ai'
 

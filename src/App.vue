@@ -136,7 +136,7 @@
                   >
                     {{ selectedJob && isJobCompleted(selectedJob.id) ? 'Interview Completed' : 'Start Interview' }}
                   </button>
-                  <button class="ghost" type="button">Save for later</button>
+                  <!-- <button class="ghost" type="button">Save for later</button> -->
                 </div>
               </div>
             </div>
@@ -182,26 +182,26 @@
       <div class="footer-column">
         <h4>Resources</h4>
         <ul>
-          <li><a href="#">NavTalk</a></li>
-          <li><a href="#">NavBoard</a></li>
-          <li><a href="#">Case studies</a></li>
-          <li><a href="#">Blog</a></li>
+          <li><a href="https://navtalk.ai/">NavTalk</a></li>
+          <li><a href="https://navbot.com/en/">NavBot</a></li>
+          <li><a href="https://navtalk.ai/use-cases/">Case studies</a></li>
+          <li><a href="https://frankfu.blog/">Blog</a></li>
         </ul>
       </div>
       <div class="footer-column">
         <h4>Social</h4>
         <ul>
-          <li><a href="#">YouTube</a></li>
+          <li><a href="https://www.youtube.com/@frankfu007">YouTube</a></li>
           <li><a href="#">Discord</a></li>
-          <li><a href="#">LinkedIn</a></li>
-          <li><a href="#">Twitter</a></li>
+          <li><a href="https://www.linkedin.com/in/navbot-frank/">LinkedIn</a></li>
+          <li><a href="https://x.com/fuwei007cn/">X</a></li>
         </ul>
       </div>
       <div class="footer-column">
         <h4>Contact</h4>
         <ul>
-          <li><a href="tel:+12345671546">+1 (234) 567-1546</a></li>
-          <li><a href="mailto:sales@navtalk.com">sales@navtalk.com</a></li>
+          <li><a href="tel:+12144071346">+1 (214) 407-1346</a></li>
+          <li><a href="mailto:sales@navtalk.ai">sales@navtalk.ai</a></li>
         </ul>
       </div>
     </footer>
