@@ -5,13 +5,27 @@
         <section class="video-section">
           <div class="video-stage">
             <video
-              v-show="isSessionActive"
+              v-show="isSessionActive && isVideoReady"
               ref="videoRef"
               class="digital-human-video"
               autoplay
               playsinline
             ></video>
-            <div v-if="!isSessionActive" class="video-placeholder">Connecting to the digital interviewer. Please hold...</div>
+            <div
+              v-if="!isVideoReady"
+              class="video-placeholder"
+              role="status"
+              aria-live="polite"
+            >
+              <div class="placeholder-figure">
+                <img :src="placeholderPortrait" alt="Digital interviewer placeholder" />
+              </div>
+              <div class="placeholder-status">
+                <span class="loading-spinner" aria-hidden="true"></span>
+                <p>{{ statusInfo.message }}</p>
+                <span class="status-hint">Preparing your digital interviewer...</span>
+              </div>
+            </div>
             <button
               v-if="!hasEmittedComplete && isSessionActive"
               class="end-call"
@@ -93,6 +107,7 @@ import {
   NAVTALK_STATUS_MESSAGES,
   buildInterviewPrompt,
 } from '../config/navtalk'
+import placeholderPortrait from '../assets/interviewer-avatar.png'
 
 const props = defineProps<{
   job: JobRole
@@ -117,10 +132,12 @@ const conversation = ref<ConversationTurn[]>([])
 const lastInterviewerMessage = ref<string | null>(null)
 const hasGreeted = ref(false)
 const closingFallbackMessage = NAVTALK_CLOSING_MESSAGE
+const isVideoReady = ref(false)
 let closingRequested = false
 let closingReceived = false
 let resolveClosingPromise: (() => void) | null = null
 let closingTimeoutHandle: ReturnType<typeof setTimeout> | null = null
+let cleanupVideoEvents: (() => void) | null = null
 
 const licenseMissing = computed(
   () => !NAVTALK_LICENSE || NAVTALK_LICENSE === 'sk_navtalk_your_key'
@@ -186,8 +203,56 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => videoRef.value,
+  (video) => {
+    if (cleanupVideoEvents) {
+      cleanupVideoEvents()
+      cleanupVideoEvents = null
+    }
+
+    if (!video) {
+      isVideoReady.value = false
+      return
+    }
+
+    const markReady = () => {
+      isVideoReady.value = true
+    }
+
+    const markNotReady = () => {
+      isVideoReady.value = false
+    }
+
+    video.addEventListener('loadeddata', markReady)
+    video.addEventListener('playing', markReady)
+    video.addEventListener('waiting', markNotReady)
+    video.addEventListener('stalled', markNotReady)
+    video.addEventListener('emptied', markNotReady)
+
+    cleanupVideoEvents = () => {
+      video.removeEventListener('loadeddata', markReady)
+      video.removeEventListener('playing', markReady)
+      video.removeEventListener('waiting', markNotReady)
+      video.removeEventListener('stalled', markNotReady)
+      video.removeEventListener('emptied', markNotReady)
+    }
+  },
+  { immediate: true }
+)
+
+watch(currentStatus, (status) => {
+  if (status === 'idle' || status === 'connecting' || status === 'stopped' || status === 'error') {
+    isVideoReady.value = false
+  }
+})
+
 onBeforeUnmount(async () => {
   await stopSession()
+  if (cleanupVideoEvents) {
+    cleanupVideoEvents()
+    cleanupVideoEvents = null
+  }
 })
 
 async function restartSession() {
@@ -466,6 +531,7 @@ function resetState() {
   awaitingAnswer.value = false
   lastInterviewerMessage.value = null
   hasGreeted.value = false
+  isVideoReady.value = false
   resetClosingState()
 }
 </script>
@@ -534,14 +600,77 @@ function resetState() {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: clamp(1.4rem, 3vw, 2rem);
   padding: clamp(1.8rem, 4vw, 2.5rem);
   text-align: center;
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(8, 11, 24, 0.95));
   color: rgba(226, 232, 240, 0.86);
   font-size: clamp(0.95rem, 1.6vw, 1.05rem);
   line-height: 1.6;
+}
+
+.placeholder-figure {
+  width: min(220px, 45%);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 30% 20%, rgba(79, 70, 229, 0.45), rgba(30, 27, 75, 0.85));
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25), 0 24px 48px rgba(2, 6, 23, 0.4);
+}
+
+.placeholder-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.05);
+}
+
+.placeholder-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.placeholder-status p {
+  margin: 0;
+  font-size: clamp(1rem, 1.8vw, 1.1rem);
+  font-weight: 600;
+  color: rgba(248, 250, 252, 0.95);
+  letter-spacing: 0.03em;
+}
+
+.status-hint {
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  color: rgba(203, 213, 225, 0.85);
+  letter-spacing: 0.02em;
+}
+
+.loading-spinner {
+  width: clamp(46px, 10vw, 58px);
+  height: clamp(46px, 10vw, 58px);
+  border-radius: 50%;
+  border: 3px solid rgba(148, 163, 184, 0.3);
+  border-top-color: rgba(129, 140, 248, 0.9);
+  border-right-color: rgba(99, 102, 241, 0.65);
+  animation: placeholder-spin 1s linear infinite;
+}
+
+@keyframes placeholder-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .end-call {
@@ -556,13 +685,13 @@ function resetState() {
   border-radius: 999px;
   border: none;
   cursor: pointer;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, #f87171, #dc2626);
   color: #fff;
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   box-shadow: 0 14px 28px rgba(239, 68, 68, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .end-call:hover,
@@ -577,7 +706,20 @@ function resetState() {
 }
 
 .end-call-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
   font-size: 1.05rem;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.end-call:hover .end-call-icon,
+.end-call:focus-visible .end-call-icon {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .status-foot {
@@ -865,6 +1007,14 @@ function resetState() {
   .end-call {
     bottom: clamp(0.85rem, 2.5vw, 1.2rem);
   }
+
+  .placeholder-figure {
+    width: min(200px, 60vw);
+  }
+
+  .placeholder-status {
+    gap: 0.65rem;
+  }
 }
 
 @media (max-width: 520px) {
@@ -903,6 +1053,14 @@ function resetState() {
     right: clamp(0.8rem, 3vw, 1.1rem);
     bottom: clamp(0.8rem, 3vw, 1.1rem);
   }
+
+  .placeholder-figure {
+    width: min(180px, 68vw);
+  }
+
+  .status-hint {
+    font-size: clamp(0.8rem, 3.4vw, 0.9rem);
+  }
 }
 
 @media (max-height: 640px) {
@@ -919,4 +1077,3 @@ function resetState() {
   }
 }
 </style>
-
