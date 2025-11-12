@@ -5,9 +5,9 @@
         <span class="brand-logo">NavTalk</span>
         <span class="brand-tagline">Digital Hiring Studio</span>
       </div>
-      <div class="header-actions">
+      <!-- <div class="header-actions">
         <button type="button" class="ghost-link">Post a job</button>
-      </div>
+      </div> -->
     </header>
 
     <main class="layout">
@@ -1469,11 +1469,149 @@ function formatTime(iso: string) {
   }
 }
 
+@media (max-width: 720px) {
+  .layout {
+    padding: 1.75rem 1rem 2.5rem;
+    gap: 1.5rem;
+  }
+
+  .search-widget {
+    gap: 0.5rem;
+  }
+
+  .search-heading {
+    font-size: 1rem;
+  }
+
+  .search-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    gap: 0.75rem;
+    border-radius: 28px;
+  }
+
+  .search-pill,
+  .search-pill.narrow {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    padding: 0.75rem 1rem;
+  }
+
+  .search-card button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .content-grid {
+    gap: 1.5rem;
+  }
+
+  .sidebar {
+    gap: 1.25rem;
+  }
+
+  .list-section {
+    padding: 1.25rem;
+  }
+
+  .job-list {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .job-row {
+    align-items: flex-start;
+    padding: 0.85rem 0.9rem;
+    gap: 0.75rem;
+  }
+
+  .job-row-meta {
+    font-size: 0.75rem;
+  }
+
+  .detail-card {
+    padding: 1.5rem;
+    gap: 1.5rem;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+  }
+
+  .detail-title h1 {
+    font-size: clamp(1.35rem, 6vw, 1.6rem);
+  }
+
+  .detail-body {
+    gap: 1.5rem;
+  }
+
+  .detail-alert {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .detail-buttons,
+  .detail-buttons > * {
+    width: 100%;
+  }
+
+  .dialog-overlay {
+    padding: 1.5rem clamp(1rem, 5vw, 1.75rem);
+  }
+
+  .records-card {
+    padding: 1.5rem;
+    border-radius: 20px;
+    max-height: calc(100vh - 3rem);
+  }
+
+  .records-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .records-scroll {
+    max-height: 50vh;
+  }
+
+  .record-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .collapse-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .site-footer {
+    padding: 2rem 1.5rem 2.25rem;
+  }
+}
+
 @media (max-width: 640px) {
   .site-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+    padding: 1.5rem 1rem 1.25rem;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .ghost-link {
+    width: 100%;
+    justify-content: center;
   }
 
   .detail-header {
@@ -1482,10 +1620,21 @@ function formatTime(iso: string) {
     gap: 1.25rem;
   }
 
+  .detail-title h1 {
+    font-size: clamp(1.25rem, 7vw, 1.5rem);
+  }
+
+  .detail-title p {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
   .detail-alert {
     grid-template-columns: 1fr;
     justify-items: center;
     align-items: center;
+    padding: 1.15rem;
   }
 
   .alert-content {
@@ -1498,10 +1647,101 @@ function formatTime(iso: string) {
 
   .detail-meta {
     flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .conversation li {
+    max-width: 100%;
+  }
+
+  .records-card {
+    width: 100%;
+  }
+
+  .records-scroll {
+    max-height: 55vh;
   }
 
   .site-footer {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-header {
+    padding: 1.3rem 0.9rem 1.1rem;
+  }
+
+  .layout {
+    padding: 1.25rem 0.85rem 2rem;
+    gap: 1.35rem;
+  }
+
+  .search-card {
+    padding: 0.9rem 0.85rem;
+    border-radius: 24px;
+  }
+
+  .search-pill,
+  .search-pill.narrow {
+    padding: 0.65rem 0.85rem;
+  }
+
+  .search-pill input {
+    font-size: 0.9rem;
+  }
+
+  .search-card button {
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .list-section {
+    padding: 1.1rem;
+  }
+
+  .job-row {
+    padding: 0.75rem 0.8rem;
+  }
+
+  .job-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 0.95rem;
+  }
+
+  .status-pill {
+    padding: 0.3rem 0.6rem;
+  }
+
+  .detail-card {
+    padding: 1.35rem;
+    border-radius: 24px;
+  }
+
+  .detail-title h1 {
+    font-size: clamp(1.2rem, 7.5vw, 1.4rem);
+  }
+
+  .detail-alert {
+    padding: 1rem;
+  }
+
+  .records-card {
+    padding: 1.25rem;
+    max-height: calc(100vh - 2rem);
+  }
+
+  .records-scroll {
+    max-height: 60vh;
+  }
+
+  .dialog-overlay {
+    padding: 1rem;
+  }
+
+  .site-footer {
+    padding: 1.6rem 1rem 1.85rem;
   }
 }
 </style>

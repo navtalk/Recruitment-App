@@ -867,6 +867,44 @@ function resetState() {
   }
 }
 
+@media (max-width: 520px) {
+  .modal-overlay {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .modal-card {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: clamp(1rem, 4vw, 1.4rem);
+  }
+
+  .modal-layout {
+    gap: 1.25rem;
+  }
+
+  .video-stage {
+    min-height: clamp(220px, 48vh, 380px);
+  }
+
+  .job-section {
+    padding: clamp(0.95rem, 4vw, 1.3rem);
+  }
+
+  .job-summary,
+  .job-requirements {
+    border-radius: 16px;
+  }
+
+  .status-foot {
+    left: clamp(0.8rem, 3vw, 1.1rem);
+    right: clamp(0.8rem, 3vw, 1.1rem);
+    bottom: clamp(0.8rem, 3vw, 1.1rem);
+  }
+}
+
 @media (max-height: 640px) {
   .modal-overlay {
     align-items: stretch;
