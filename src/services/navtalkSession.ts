@@ -3,6 +3,7 @@ interface NavtalkSessionCallbacks {
   onUserTranscript?: (transcript: string) => void
   onAssistantPartial?: (payload: { responseId: string; text: string }) => void
   onAssistantComplete?: (payload: { responseId: string; text: string }) => void
+  onAutoHangup?: (reason: string) => void
   onError?: (error: string) => void
 }
 
@@ -50,6 +51,7 @@ export class NavtalkSession {
   private status: NavtalkSessionStatus = 'idle'
   private isRecording = false
   private configuration: RTCConfiguration = { ...ICE_CONFIGURATION }
+  private pendingHangupReason: string | null = null
 
   constructor(options: NavtalkSessionOptions) {
     this.license = options.license
@@ -70,6 +72,7 @@ export class NavtalkSession {
       throw new Error('NavtalkSession can only run in browser environment')
     }
 
+    this.pendingHangupReason = null
     this.setStatus('connecting')
     this.initializeMainWebSocket()
     this.initializeResultWebSocket()
@@ -99,6 +102,7 @@ export class NavtalkSession {
     this.socket = null
     this.resultSocket = null
     this.responseBuffer.clear()
+    this.pendingHangupReason = null
   }
 
   private initializeMainWebSocket() {
@@ -296,6 +300,12 @@ export class NavtalkSession {
           this.responseBuffer.delete(data.response_id)
         }
         break
+      case 'response.function_call_arguments.done':
+        this.handleFunctionCallArguments(data)
+        break
+      case 'response.audio.done':
+        this.handleAudioResponseComplete()
+        break
       case 'session.gpu_full':
         this.callbacks.onError?.('GPU resources are currently busy. Please try again later.')
         break
@@ -331,6 +341,24 @@ export class NavtalkSession {
         input_audio_transcription: {
           model: 'whisper-1',
         },
+        tools: [
+          {
+            type: 'function',
+            name: 'end_conversation',
+            description:
+              'Use this when the user says goodbye, wants to leave, or asks to end the interview so the system can hang up automatically after your final response.',
+            parameters: {
+              type: 'object',
+              properties: {
+                reason: {
+                  type: 'string',
+                  description: 'Brief explanation of why the call should end.',
+                },
+              },
+              required: ['reason'],
+            },
+          },
+        ],
       },
     }
 
@@ -433,6 +461,79 @@ export class NavtalkSession {
       this.videoElement.pause()
       this.videoElement.srcObject = null
     }
+  }
+
+  private handleFunctionCallArguments(data: any) {
+    const name = typeof data?.name === 'string' ? data.name : ''
+    if (!name) {
+      return
+    }
+
+    let parsedArgs: any = {}
+    if (typeof data?.arguments === 'string' && data.arguments.trim().length > 0) {
+      try {
+        parsedArgs = JSON.parse(data.arguments)
+      } catch (error) {
+        console.error('Failed to parse function call arguments', error)
+      }
+    }
+
+    switch (name) {
+      case 'end_conversation':
+        this.handleEndConversation(parsedArgs, data?.call_id)
+        break
+      default:
+        break
+    }
+  }
+
+  private handleEndConversation(args: any, callId?: string) {
+    const reason =
+      typeof args?.reason === 'string' && args.reason.trim().length > 0
+        ? args.reason.trim()
+        : 'User requested to end the conversation.'
+    this.pendingHangupReason = reason
+
+    if (callId) {
+      this.sendFunctionCallOutput(String(callId), {
+        action: 'end_conversation',
+        status: 'acknowledged',
+        reason,
+      })
+    }
+  }
+
+  private sendFunctionCallOutput(callId: string, output: Record<string, unknown> | string) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN || !callId) {
+      return
+    }
+
+    const serializedOutput = typeof output === 'string' ? output : JSON.stringify(output)
+
+    const payload = {
+      type: 'conversation.item.create',
+      item: {
+        type: 'function_call_output',
+        output: serializedOutput,
+        call_id: callId,
+      },
+    }
+
+    try {
+      this.socket.send(JSON.stringify(payload))
+      this.socket.send(JSON.stringify({ type: 'response.create' }))
+    } catch (error) {
+      console.error('Failed to send function call output', error)
+    }
+  }
+
+  private handleAudioResponseComplete() {
+    if (!this.pendingHangupReason) {
+      return
+    }
+    const reason = this.pendingHangupReason
+    this.pendingHangupReason = null
+    this.callbacks.onAutoHangup?.(reason)
   }
 
   private floatTo16BitPCM(float32Array: Float32Array) {

@@ -79,7 +79,6 @@ export const NAVTALK_LANGUAGE: InterviewLanguage = normalizeLanguage(
 )
 
 const ACTIVE_LANGUAGE_PRESET = LANGUAGE_PRESETS[NAVTALK_LANGUAGE]
-
 const DEFAULT_LICENSE = ''
 // ✒️ // ✒️ character name. Currently supported characters include: navtalk.Alex, navtalk.Ethan, navtalk.Leo, navtalk.Lily, navtalk.Emma, navtalk.Sophia, navtalk.Mia, navtalk.Chloe, navtalk.Zoe, navtalk.Ava
 // You can check the specific images on the official website: https://console.navtalk.ai/login#/playground/realtime_digital_human.
@@ -126,6 +125,9 @@ export function buildInterviewPrompt(job: JobRole): string {
   }
 
   sections.push(basePrompt)
+  sections.push(
+    'If the candidate explicitly says goodbye, wants to leave, or asks to stop, call the end_conversation function so the system can close the realtime session after you deliver your final response.'
+  )
 
   return sections.join('\n\n')
 }

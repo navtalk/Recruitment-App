@@ -126,6 +126,7 @@ const errorMessage = ref<string | null>(null)
 const answers = ref<InterviewAnswer[]>([])
 const currentQuestionIndex = ref(0)
 const hasEmittedComplete = ref(false)
+const autoHangupTriggered = ref(false)
 const firstQuestionSpoken = ref(false)
 const awaitingAnswer = ref(false)
 const conversation = ref<ConversationTurn[]>([])
@@ -339,6 +340,9 @@ async function startSession() {
         awaitingAnswer.value = true
       }
     },
+    onAutoHangup: (reason) => {
+      handleAutoHangup(reason)
+    },
     onError: (message) => {
       errorMessage.value = message
       currentStatus.value = 'error'
@@ -427,8 +431,19 @@ function resetClosingState() {
   closingReceived = false
 }
 
-async function finalizeInterview(options: { immediate?: boolean } = {}) {
-  const { immediate = false } = options
+function handleAutoHangup(reason: string) {
+  void reason
+  if (autoHangupTriggered.value || hasEmittedComplete.value) {
+    return
+  }
+  autoHangupTriggered.value = true
+  finalizeInterview({ immediate: true, suppressFallback: true }).catch((error) => {
+    console.error('Auto hangup finalize failed', error)
+  })
+}
+
+async function finalizeInterview(options: { immediate?: boolean; suppressFallback?: boolean } = {}) {
+  const { immediate = false, suppressFallback = false } = options
 
   if (hasEmittedComplete.value) {
     return
@@ -438,12 +453,14 @@ async function finalizeInterview(options: { immediate?: boolean } = {}) {
   if (immediate) {
     resetClosingState()
 
-    const lastTurn = conversation.value[conversation.value.length - 1]
-    if (!lastTurn || lastTurn.speaker !== 'interviewer' || lastTurn.message !== closingFallbackMessage) {
-      conversation.value = [
-        ...conversation.value,
-        { speaker: 'interviewer', message: closingFallbackMessage },
-      ]
+    if (!suppressFallback) {
+      const lastTurn = conversation.value[conversation.value.length - 1]
+      if (!lastTurn || lastTurn.speaker !== 'interviewer' || lastTurn.message !== closingFallbackMessage) {
+        conversation.value = [
+          ...conversation.value,
+          { speaker: 'interviewer', message: closingFallbackMessage },
+        ]
+      }
     }
 
     await stopSession()
@@ -527,6 +544,7 @@ function resetState() {
   errorMessage.value = null
   currentStatus.value = 'idle'
   hasEmittedComplete.value = false
+  autoHangupTriggered.value = false
   firstQuestionSpoken.value = false
   awaitingAnswer.value = false
   lastInterviewerMessage.value = null
