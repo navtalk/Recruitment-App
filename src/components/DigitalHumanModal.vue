@@ -139,6 +139,9 @@ let closingReceived = false
 let resolveClosingPromise: (() => void) | null = null
 let closingTimeoutHandle: ReturnType<typeof setTimeout> | null = null
 let cleanupVideoEvents: (() => void) | null = null
+let autoHangupTimeoutHandle: ReturnType<typeof setTimeout> | null = null
+
+const AUTO_HANGUP_DELAY_MS = 1800
 
 const licenseMissing = computed(
   () => !NAVTALK_LICENSE || NAVTALK_LICENSE === 'sk_navtalk_your_key'
@@ -418,8 +421,16 @@ function clearClosingTimer() {
   }
 }
 
+function clearAutoHangupTimer() {
+  if (autoHangupTimeoutHandle !== null) {
+    clearTimeout(autoHangupTimeoutHandle)
+    autoHangupTimeoutHandle = null
+  }
+}
+
 function resetClosingState() {
   clearClosingTimer()
+  clearAutoHangupTimer()
   if (resolveClosingPromise) {
     const resolver = resolveClosingPromise
     resolveClosingPromise = null
@@ -437,9 +448,20 @@ function handleAutoHangup(reason: string) {
     return
   }
   autoHangupTriggered.value = true
-  finalizeInterview({ immediate: true, suppressFallback: true }).catch((error) => {
-    console.error('Auto hangup finalize failed', error)
-  })
+  clearAutoHangupTimer()
+  if (typeof window === 'undefined') {
+    finalizeInterview({ immediate: true, suppressFallback: true }).catch((error) => {
+      console.error('Auto hangup finalize failed', error)
+    })
+    return
+  }
+
+  autoHangupTimeoutHandle = window.setTimeout(() => {
+    finalizeInterview({ immediate: true, suppressFallback: true }).catch((error) => {
+      console.error('Auto hangup finalize failed', error)
+    })
+    autoHangupTimeoutHandle = null
+  }, AUTO_HANGUP_DELAY_MS)
 }
 
 async function finalizeInterview(options: { immediate?: boolean; suppressFallback?: boolean } = {}) {
