@@ -52,6 +52,7 @@ export class NavtalkSession {
   private isRecording = false
   private configuration: RTCConfiguration = { ...ICE_CONFIGURATION }
   private pendingHangupReason: string | null = null
+  private targetSessionId: string | null = null
 
   constructor(options: NavtalkSessionOptions) {
     this.license = options.license
@@ -75,7 +76,6 @@ export class NavtalkSession {
     this.pendingHangupReason = null
     this.setStatus('connecting')
     this.initializeMainWebSocket()
-    this.initializeResultWebSocket()
   }
 
   async stop() {
@@ -103,6 +103,7 @@ export class NavtalkSession {
     this.resultSocket = null
     this.responseBuffer.clear()
     this.pendingHangupReason = null
+    this.targetSessionId = null
   }
 
   private initializeMainWebSocket() {
@@ -140,14 +141,30 @@ export class NavtalkSession {
     }
   }
 
-  private initializeResultWebSocket() {
-    const targetSessionId = this.license
-    const endpoint = `wss://${this.baseUrl}/api/webrtc?userId=${encodeURIComponent(targetSessionId)}`
+  private initializeResultWebSocket(sessionId: string) {
+    if (!sessionId) {
+      return
+    }
+
+    if (this.resultSocket) {
+      try {
+        this.resultSocket.close()
+      } catch (error) {
+        // ignore
+      }
+    }
+
+    this.targetSessionId = `target-${sessionId}`
+
+    const endpoint = `wss://${this.baseUrl}/api/webrtc?userId=${encodeURIComponent(sessionId)}`
 
     this.resultSocket = new WebSocket(endpoint)
 
     this.resultSocket.onopen = () => {
-      const message = { type: 'create', targetSessionId }
+      if (!this.targetSessionId) {
+        return
+      }
+      const message = { type: 'create', targetSessionId: this.targetSessionId }
       this.resultSocket?.send(JSON.stringify(message))
     }
 
@@ -158,6 +175,9 @@ export class NavtalkSession {
           case 'offer':
             // Handle asynchronously; no need to await in event loop
             void this.handleOffer(message)
+            break
+          case 'answer':
+            // no-op, browser acts as answerer
             break
           case 'iceCandidate':
             this.handleIceCandidate(message)
@@ -173,6 +193,11 @@ export class NavtalkSession {
     this.resultSocket.onerror = (event) => {
       console.error('Result WebSocket error', event)
       this.callbacks.onError?.('')
+    }
+
+    this.resultSocket.onclose = () => {
+      this.resultSocket = null
+      this.targetSessionId = null
     }
   }
 
@@ -200,9 +225,13 @@ export class NavtalkSession {
 
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate && this.resultSocket?.readyState === WebSocket.OPEN) {
+        const targetId = this.targetSessionId ?? message.targetSessionId
+        if (!targetId) {
+          return
+        }
         const payload = {
           type: 'iceCandidate',
-          targetSessionId: message.targetSessionId,
+          targetSessionId: targetId,
           candidate: event.candidate,
         }
         this.resultSocket.send(JSON.stringify(payload))
@@ -236,9 +265,13 @@ export class NavtalkSession {
     await this.peerConnection.setLocalDescription(answer)
 
     if (this.resultSocket?.readyState === WebSocket.OPEN) {
+      const targetId = this.targetSessionId ?? message.targetSessionId
+      if (!targetId) {
+        return
+      }
       const responseMessage = {
         type: 'answer',
-        targetSessionId: message.targetSessionId,
+        targetSessionId: targetId,
         sdp: this.peerConnection.localDescription,
       }
       this.resultSocket.send(JSON.stringify(responseMessage))
@@ -262,6 +295,13 @@ export class NavtalkSession {
       case 'session.created':
         this.sendSessionUpdate()
         break
+      case 'session.session_id': {
+        const sessionId = data.sessionId ?? data.session_id
+        if (typeof sessionId === 'string' && sessionId.length > 0) {
+          this.initializeResultWebSocket(sessionId)
+        }
+        break
+      }
       case 'session.updated':
         this.setStatus('ready')
         this.requestAssistantResponse()
