@@ -192,7 +192,7 @@
         <h4>Social</h4>
         <ul>
           <li><a href="https://www.youtube.com/@frankfu007">YouTube</a></li>
-          <li><a href="#">Discord</a></li>
+          <li><a href="https://discord.com/invite/A9VE3zXM9p">Discord</a></li>
           <li><a href="https://www.linkedin.com/in/navbot-frank/">LinkedIn</a></li>
           <li><a href="https://x.com/fuwei007cn/">X</a></li>
         </ul>
