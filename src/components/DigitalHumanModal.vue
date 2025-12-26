@@ -103,6 +103,7 @@ import {
   NAVTALK_CHARACTER_NAME,
   NAVTALK_LICENSE,
   NAVTALK_VOICE,
+  NAVTALK_MODEL,
   NAVTALK_CLOSING_MESSAGE,
   NAVTALK_STATUS_MESSAGES,
   buildInterviewPrompt,
@@ -283,74 +284,75 @@ async function startSession() {
   lastInterviewerMessage.value = null
   hasGreeted.value = false
 
-  session.value = new NavtalkSession({
-    license: NAVTALK_LICENSE,
-    characterName: props.job.characterName ?? NAVTALK_CHARACTER_NAME,
-    voice: props.job.voice ?? NAVTALK_VOICE,
-    baseUrl: NAVTALK_BASE_URL,
-    prompt,
-    videoElement: video,
-    onStatusChange: (status) => {
-      currentStatus.value = status
-    },
-    onUserTranscript: (transcript) => {
-      handleUserTranscript(transcript)
-    },
-    onAssistantPartial: () => {
-      currentStatus.value = 'speaking'
-    },
-    onAssistantComplete: ({ text }) => {
-      currentStatus.value = 'connected'
-      const trimmed = text.trim()
-      if (!trimmed) {
-        return
-      }
-
-      lastInterviewerMessage.value = trimmed
-      conversation.value = [
-        ...conversation.value,
-        {
-          speaker: 'interviewer',
-          message: trimmed,
-        },
-      ]
-
-      if (!hasGreeted.value) {
-        hasGreeted.value = true
-        return
-      }
-
-      if (closingRequested) {
-        closingReceived = true
-        const resolver = resolveClosingPromise
-        resolveClosingPromise = null
-        if (resolver) {
-          resolver()
+    session.value = new NavtalkSession({
+      license: NAVTALK_LICENSE,
+      characterName: props.job.characterName ?? NAVTALK_CHARACTER_NAME,
+      voice: props.job.voice ?? NAVTALK_VOICE,
+      model: NAVTALK_MODEL,
+      baseUrl: NAVTALK_BASE_URL,
+      prompt,
+      videoElement: video,
+      onStatusChange: (status) => {
+        currentStatus.value = status
+      },
+      onUserTranscript: (transcript) => {
+        handleUserTranscript(transcript)
+      },
+      onAssistantPartial: () => {
+        currentStatus.value = 'speaking'
+      },
+      onAssistantComplete: ({ text }) => {
+        currentStatus.value = 'connected'
+        const trimmed = text.trim()
+        if (!trimmed) {
+          return
         }
-        clearClosingTimer()
-        closingRequested = false
-        return
-      }
 
-      if (!firstQuestionSpoken.value) {
-        firstQuestionSpoken.value = true
-      }
+        lastInterviewerMessage.value = trimmed
+        conversation.value = [
+          ...conversation.value,
+          {
+            speaker: 'interviewer',
+            message: trimmed,
+          },
+        ]
 
-      if (
-        answers.value.length === currentQuestionIndex.value &&
-        answers.value.length < expectedQuestionCount.value
-      ) {
-        awaitingAnswer.value = true
-      }
-    },
-    onAutoHangup: (reason) => {
-      handleAutoHangup(reason)
-    },
-    onError: (message) => {
-      errorMessage.value = message
-      currentStatus.value = 'error'
-    },
-  })
+        if (!hasGreeted.value) {
+          hasGreeted.value = true
+          return
+        }
+
+        if (closingRequested) {
+          closingReceived = true
+          const resolver = resolveClosingPromise
+          resolveClosingPromise = null
+          if (resolver) {
+            resolver()
+          }
+          clearClosingTimer()
+          closingRequested = false
+          return
+        }
+
+        if (!firstQuestionSpoken.value) {
+          firstQuestionSpoken.value = true
+        }
+
+        if (
+          answers.value.length === currentQuestionIndex.value &&
+          answers.value.length < expectedQuestionCount.value
+        ) {
+          awaitingAnswer.value = true
+        }
+      },
+      onAutoHangup: (reason) => {
+        handleAutoHangup(reason)
+      },
+      onError: (message) => {
+        errorMessage.value = message
+        currentStatus.value = 'error'
+      },
+    })
 
   try {
     await session.value.start()

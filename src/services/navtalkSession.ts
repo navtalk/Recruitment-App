@@ -21,6 +21,7 @@ interface NavtalkSessionOptions extends NavtalkSessionCallbacks {
   license: string
   characterName: string
   voice: string
+  model: string
   baseUrl: string
   prompt: string
   videoElement?: HTMLVideoElement | null
@@ -36,11 +37,11 @@ export class NavtalkSession {
   private readonly voice: string
   private readonly baseUrl: string
   private readonly prompt: string
+  private readonly model: string
   private readonly callbacks: NavtalkSessionCallbacks
   private readonly videoElement?: HTMLVideoElement | null
 
   private socket: WebSocket | null = null
-  private resultSocket: WebSocket | null = null
   private peerConnection: RTCPeerConnection | null = null
 
   private audioContext: AudioContext | null = null
@@ -52,12 +53,12 @@ export class NavtalkSession {
   private isRecording = false
   private configuration: RTCConfiguration = { ...ICE_CONFIGURATION }
   private pendingHangupReason: string | null = null
-  private targetSessionId: string | null = null
 
   constructor(options: NavtalkSessionOptions) {
     this.license = options.license
     this.characterName = options.characterName
     this.voice = options.voice
+    this.model = options.model
     this.baseUrl = options.baseUrl
     this.prompt = options.prompt
     this.callbacks = options
@@ -91,24 +92,19 @@ export class NavtalkSession {
       }
     }
 
-    if (this.resultSocket) {
-      try {
-        this.resultSocket.close()
-      } catch (error) {
-        console.error('Error closing result socket', error)
-      }
-    }
-
     this.socket = null
-    this.resultSocket = null
     this.responseBuffer.clear()
     this.pendingHangupReason = null
-    this.targetSessionId = null
   }
 
   private initializeMainWebSocket() {
-    const websocketUrl = `wss://${this.baseUrl}/api/realtime-api`
-    const withParams = `${websocketUrl}?license=${encodeURIComponent(this.license)}&characterName=${encodeURIComponent(this.characterName)}`
+    const websocketUrl = this.buildWebsocketUrl()
+    const params = new URLSearchParams({
+      license: this.license,
+      name: this.characterName,
+      model: this.model,
+    })
+    const withParams = websocketUrl.includes('?') ? `${websocketUrl}&${params}` : `${websocketUrl}?${params}`
 
     this.socket = new WebSocket(withParams)
     this.socket.binaryType = 'arraybuffer'
@@ -141,73 +137,37 @@ export class NavtalkSession {
     }
   }
 
-  private initializeResultWebSocket(sessionId: string) {
-    if (!sessionId) {
+  private buildWebsocketUrl() {
+    if (this.baseUrl.startsWith('ws://') || this.baseUrl.startsWith('wss://')) {
+      return this.baseUrl
+    }
+    return `wss://${this.baseUrl}/wss/v2/realtime-chat`
+  }
+
+  private getApiHost() {
+    if (this.baseUrl.startsWith('ws://') || this.baseUrl.startsWith('wss://')) {
+      try {
+        return new URL(this.baseUrl).host
+      } catch {
+        return this.baseUrl.replace(/^wss?:\/\//, '')
+      }
+    }
+    return this.baseUrl
+  }
+
+  private sendSignalingMessage(type: string, data: Record<string, unknown>) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       return
     }
-
-    if (this.resultSocket) {
-      try {
-        this.resultSocket.close()
-      } catch (error) {
-        // ignore
-      }
-    }
-
-    this.targetSessionId = `target-${sessionId}`
-
-    const endpoint = `wss://${this.baseUrl}/api/webrtc?userId=${encodeURIComponent(sessionId)}`
-
-    this.resultSocket = new WebSocket(endpoint)
-
-    this.resultSocket.onopen = () => {
-      if (!this.targetSessionId) {
-        return
-      }
-      const message = { type: 'create', targetSessionId: this.targetSessionId }
-      this.resultSocket?.send(JSON.stringify(message))
-    }
-
-    this.resultSocket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data as string)
-        switch (message.type) {
-          case 'offer':
-            // Handle asynchronously; no need to await in event loop
-            void this.handleOffer(message)
-            break
-          case 'answer':
-            // no-op, browser acts as answerer
-            break
-          case 'iceCandidate':
-            this.handleIceCandidate(message)
-            break
-          default:
-            break
-        }
-      } catch (error) {
-        console.error('Failed to parse result socket message', error)
-      }
-    }
-
-    this.resultSocket.onerror = (event) => {
-      console.error('Result WebSocket error', event)
-      this.callbacks.onError?.('')
-    }
-
-    this.resultSocket.onclose = () => {
-      this.resultSocket = null
-      this.targetSessionId = null
-    }
+    this.socket.send(JSON.stringify({ type, data }))
   }
 
   private async handleOffer(message: any) {
     const offer = new RTCSessionDescription(message.sdp)
 
-    // Try to obtain TURN/STUN servers from the transfer service.
-    // Falls back to default STUN-only configuration on failure.
     try {
-      const endpoint = `https://${this.baseUrl}/api/webrtc/generate-ice-servers`
+      const host = this.getApiHost()
+      const endpoint = `https://${host}/api/webrtc/generate-ice-servers`
       const res = await fetch(endpoint, { method: 'POST' })
       if (res.ok) {
         const data: any = await res.json()
@@ -224,17 +184,10 @@ export class NavtalkSession {
     this.peerConnection = new RTCPeerConnection(this.configuration)
 
     this.peerConnection.onicecandidate = (event) => {
-      if (event.candidate && this.resultSocket?.readyState === WebSocket.OPEN) {
-        const targetId = this.targetSessionId ?? message.targetSessionId
-        if (!targetId) {
-          return
-        }
-        const payload = {
-          type: 'iceCandidate',
-          targetSessionId: targetId,
+      if (event.candidate) {
+        this.sendSignalingMessage('webrtc.signaling.iceCandidate', {
           candidate: event.candidate,
-        }
-        this.resultSocket.send(JSON.stringify(payload))
+        })
       }
     }
 
@@ -264,92 +217,123 @@ export class NavtalkSession {
     const answer = await this.peerConnection.createAnswer()
     await this.peerConnection.setLocalDescription(answer)
 
-    if (this.resultSocket?.readyState === WebSocket.OPEN) {
-      const targetId = this.targetSessionId ?? message.targetSessionId
-      if (!targetId) {
-        return
-      }
-      const responseMessage = {
-        type: 'answer',
-        targetSessionId: targetId,
+    if (this.peerConnection.localDescription) {
+      this.sendSignalingMessage('webrtc.signaling.answer', {
         sdp: this.peerConnection.localDescription,
-      }
-      this.resultSocket.send(JSON.stringify(responseMessage))
+      })
     }
   }
 
   private handleIceCandidate(message: any) {
-    if (!this.peerConnection || !message.candidate) {
+    const candidate = message.candidate ?? message.data?.candidate
+    if (!this.peerConnection || !candidate) {
       return
     }
 
     this.peerConnection
-      .addIceCandidate(new RTCIceCandidate(message.candidate))
+      .addIceCandidate(new RTCIceCandidate(candidate))
       .catch((error) => {
         console.error('Failed to add ICE candidate', error)
       })
   }
 
+  private handleAnswer(message: any) {
+    const sdp = message.sdp ?? message.data?.sdp
+    if (!this.peerConnection || !sdp) {
+      return
+    }
+    this.peerConnection
+      .setRemoteDescription(new RTCSessionDescription(sdp))
+      .catch((error) => {
+        console.error('Failed to handle Answer', error)
+      })
+  }
+
   private handleRealtimeMessage(data: any) {
+    const payload = data.data ?? data
     switch (data.type) {
-      case 'session.created':
-        this.sendSessionUpdate()
-        break
-      case 'session.session_id': {
-        const sessionId = data.sessionId ?? data.session_id
-        if (typeof sessionId === 'string' && sessionId.length > 0) {
-          this.initializeResultWebSocket(sessionId)
+      case 'conversation.connected.success': {
+        const iceServers = payload?.iceServers ?? payload?.ice_servers
+        if (Array.isArray(iceServers) && iceServers.length > 0) {
+          this.configuration = { iceServers }
         }
         break
       }
-      case 'session.updated':
+      case 'conversation.connected.fail':
+      case 'conversation.connected.close': {
+        const errorMessage = data.message ?? payload?.message ?? 'Realtime connection error'
+        this.callbacks.onError?.(errorMessage)
+        this.setStatus('error')
+        break
+      }
+      case 'realtime.session.created':
+        this.sendSessionUpdate()
+        break
+      case 'realtime.session.updated':
         this.setStatus('ready')
         this.requestAssistantResponse()
         this.startRecording()
         break
-      case 'input_audio_buffer.speech_started':
+      case 'realtime.input_audio_buffer.speech_started':
         this.setStatus('listening')
         break
-      case 'input_audio_buffer.speech_stopped':
+      case 'realtime.input_audio_buffer.speech_stopped':
         this.setStatus('connected')
         break
-      case 'conversation.item.input_audio_transcription.completed':
-        if (data.transcript) {
-          this.callbacks.onUserTranscript?.(data.transcript)
+      case 'realtime.conversation.item.input_audio_transcription.completed':
+        if (typeof payload?.content === 'string' && payload.content.length > 0) {
+          this.callbacks.onUserTranscript?.(payload.content)
         }
         break
-      case 'response.audio_transcript.delta':
-        if (data.response_id && typeof data.delta === 'string') {
-          const previous = this.responseBuffer.get(data.response_id) ?? ''
-          const next = previous + data.delta
-          this.responseBuffer.set(data.response_id, next)
+      case 'realtime.response.audio_transcript.delta': {
+        const responseId = payload?.id ?? payload?.response_id
+        const transcript = payload?.content ?? payload?.delta
+        if (responseId && typeof transcript === 'string') {
+          const previous = this.responseBuffer.get(responseId) ?? ''
+          const next = previous + transcript
+          this.responseBuffer.set(responseId, next)
           this.callbacks.onAssistantPartial?.({
-            responseId: data.response_id,
+            responseId,
             text: next,
           })
           this.setStatus('speaking')
         }
         break
-      case 'response.audio_transcript.done':
-        if (data.response_id) {
-          const text = data.transcript ?? this.responseBuffer.get(data.response_id) ?? ''
+      }
+      case 'realtime.response.audio_transcript.done': {
+        const responseId = payload?.id ?? payload?.response_id
+        if (responseId) {
+          const text =
+            payload?.content ?? payload?.transcript ?? this.responseBuffer.get(responseId) ?? ''
           this.callbacks.onAssistantComplete?.({
-            responseId: data.response_id,
+            responseId,
             text,
           })
-          this.responseBuffer.delete(data.response_id)
+          this.responseBuffer.delete(responseId)
         }
         break
-      case 'response.function_call_arguments.done':
-        this.handleFunctionCallArguments(data)
+      }
+      case 'realtime.response.function_call_arguments.done':
+        this.handleFunctionCallArguments(payload)
         break
-      case 'response.audio.done':
+      case 'realtime.response.audio.done':
         this.handleAudioResponseComplete()
         break
-      case 'session.gpu_full':
+      case 'realtime.response.audio.delta':
+        break
+      case 'webrtc.signaling.offer':
+        void this.handleOffer(payload)
+        break
+      case 'webrtc.signaling.answer':
+        this.handleAnswer(payload)
+        break
+      case 'webrtc.signaling.iceCandidate':
+        this.handleIceCandidate(payload)
+        break
+      case 'realtime.session.gpu_full':
         this.callbacks.onError?.('GPU resources are currently busy. Please try again later.')
         break
-      case 'session.insufficient_balance':
+      case 'realtime.session.insufficient_balance':
         this.callbacks.onError?.('Account balance is insufficient. Please top up to continue.')
         break
       default:
@@ -365,6 +349,8 @@ export class NavtalkSession {
     const sessionConfig = {
       type: 'session.update',
       session: {
+        model: this.model,
+        character: this.characterName,
         instructions: this.prompt,
         turn_detection: {
           type: 'server_vad',
@@ -442,7 +428,12 @@ export class NavtalkSession {
           const chunkSize = 4096
           for (let i = 0; i < base64PCM.length; i += chunkSize) {
             const chunk = base64PCM.slice(i, i + chunkSize)
-            this.socket.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: chunk }))
+            this.socket.send(
+              JSON.stringify({
+                type: 'realtime.input_audio_buffer.append',
+                data: { audio: chunk },
+              })
+            )
           }
         }
 
