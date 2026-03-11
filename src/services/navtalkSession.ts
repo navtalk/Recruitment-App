@@ -27,6 +27,37 @@ interface NavtalkSessionOptions extends NavtalkSessionCallbacks {
   videoElement?: HTMLVideoElement | null
 }
 
+const NavTalkMessageType = {
+  CONNECTED_SUCCESS: 'conversation.connected.success',
+  CONNECTED_FAIL: 'conversation.connected.fail',
+  CONNECTED_CLOSE: 'conversation.connected.close',
+  INSUFFICIENT_BALANCE: 'conversation.connected.insufficient_balance',
+  WEB_RTC_OFFER: 'webrtc.signaling.offer',
+  WEB_RTC_ANSWER: 'webrtc.signaling.answer',
+  WEB_RTC_ICE_CANDIDATE: 'webrtc.signaling.iceCandidate',
+  REALTIME_SESSION_CREATED: 'realtime.session.created',
+  REALTIME_SESSION_UPDATED: 'realtime.session.updated',
+  REALTIME_SPEECH_STARTED: 'realtime.input_audio_buffer.speech_started',
+  REALTIME_SPEECH_STOPPED: 'realtime.input_audio_buffer.speech_stopped',
+  REALTIME_CONVERSATION_ITEM_COMPLETED: 'realtime.conversation.item.input_audio_transcription.completed',
+  REALTIME_RESPONSE_AUDIO_TRANSCRIPT_DELTA: 'realtime.response.audio_transcript.delta',
+  REALTIME_RESPONSE_AUDIO_DELTA: 'realtime.response.audio.delta',
+  REALTIME_RESPONSE_AUDIO_TRANSCRIPT_DONE: 'realtime.response.audio_transcript.done',
+  REALTIME_RESPONSE_AUDIO_DONE: 'realtime.response.audio.done',
+  REALTIME_RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA: 'realtime.response.function_call_arguments.delta',
+  REALTIME_RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE: 'realtime.response.function_call_arguments.done',
+  REALTIME_RESPONSE_COMPLETED: 'realtime.response.completed',
+  REALTIME_RESPONSE_ERROR: 'realtime.response.error',
+  REALTIME_INPUT_AUDIO_BUFFER_APPEND: 'realtime.input_audio_buffer.append',
+  REALTIME_INPUT_TEXT: 'realtime.input_text',
+  REALTIME_INPUT_IMAGE: 'realtime.input_image',
+  REALTIME_INPUT_CONFIG: 'realtime.input_config',
+  RESPONSE_CREATE: 'response.create',
+  CONVERSATION_ITEM_CREATE: 'conversation.item.create',
+  SESSION_GPU_FULL: 'realtime.session.gpu_full',
+  SESSION_INSUFFICIENT_BALANCE: 'realtime.session.insufficient_balance',
+} as const
+
 const ICE_CONFIGURATION: RTCConfiguration = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 }
@@ -111,6 +142,7 @@ export class NavtalkSession {
 
     this.socket.onopen = () => {
       this.setStatus('connected')
+      this.sendSessionConfig()
     }
 
     this.socket.onmessage = (event) => {
@@ -165,27 +197,12 @@ export class NavtalkSession {
   private async handleOffer(message: any) {
     const offer = new RTCSessionDescription(message.sdp)
 
-    try {
-      const host = this.getApiHost()
-      const endpoint = `https://${host}/api/webrtc/generate-ice-servers`
-      const res = await fetch(endpoint, { method: 'POST' })
-      if (res.ok) {
-        const data: any = await res.json()
-        const servers = data?.data?.iceServers ?? data?.iceServers
-        if (Array.isArray(servers) && servers.length > 0) {
-          this.configuration = { iceServers: servers }
-        }
-      }
-    } catch (e) {
-      // keep default configuration
-    }
-
     this.cleanupPeerConnection()
     this.peerConnection = new RTCPeerConnection(this.configuration)
 
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        this.sendSignalingMessage('webrtc.signaling.iceCandidate', {
+        this.sendSignalingMessage(NavTalkMessageType.WEB_RTC_ICE_CANDIDATE, {
           candidate: event.candidate,
         })
       }
@@ -218,7 +235,7 @@ export class NavtalkSession {
     await this.peerConnection.setLocalDescription(answer)
 
     if (this.peerConnection.localDescription) {
-      this.sendSignalingMessage('webrtc.signaling.answer', {
+      this.sendSignalingMessage(NavTalkMessageType.WEB_RTC_ANSWER, {
         sdp: this.peerConnection.localDescription,
       })
     }
@@ -252,40 +269,40 @@ export class NavtalkSession {
   private handleRealtimeMessage(data: any) {
     const payload = data.data ?? data
     switch (data.type) {
-      case 'conversation.connected.success': {
+      case NavTalkMessageType.CONNECTED_SUCCESS: {
         const iceServers = payload?.iceServers ?? payload?.ice_servers
         if (Array.isArray(iceServers) && iceServers.length > 0) {
           this.configuration = { iceServers }
         }
         break
       }
-      case 'conversation.connected.fail':
-      case 'conversation.connected.close': {
+      case NavTalkMessageType.CONNECTED_FAIL:
+      case NavTalkMessageType.CONNECTED_CLOSE: {
         const errorMessage = data.message ?? payload?.message ?? 'Realtime connection error'
         this.callbacks.onError?.(errorMessage)
         this.setStatus('error')
         break
       }
-      case 'realtime.session.created':
+      case NavTalkMessageType.REALTIME_SESSION_CREATED:
         this.sendSessionUpdate()
         break
-      case 'realtime.session.updated':
+      case NavTalkMessageType.REALTIME_SESSION_UPDATED:
         this.setStatus('ready')
         this.requestAssistantResponse()
         this.startRecording()
         break
-      case 'realtime.input_audio_buffer.speech_started':
+      case NavTalkMessageType.REALTIME_SPEECH_STARTED:
         this.setStatus('listening')
         break
-      case 'realtime.input_audio_buffer.speech_stopped':
+      case NavTalkMessageType.REALTIME_SPEECH_STOPPED:
         this.setStatus('connected')
         break
-      case 'realtime.conversation.item.input_audio_transcription.completed':
+      case NavTalkMessageType.REALTIME_CONVERSATION_ITEM_COMPLETED:
         if (typeof payload?.content === 'string' && payload.content.length > 0) {
           this.callbacks.onUserTranscript?.(payload.content)
         }
         break
-      case 'realtime.response.audio_transcript.delta': {
+      case NavTalkMessageType.REALTIME_RESPONSE_AUDIO_TRANSCRIPT_DELTA: {
         const responseId = payload?.id ?? payload?.response_id
         const transcript = payload?.content ?? payload?.delta
         if (responseId && typeof transcript === 'string') {
@@ -300,7 +317,7 @@ export class NavtalkSession {
         }
         break
       }
-      case 'realtime.response.audio_transcript.done': {
+      case NavTalkMessageType.REALTIME_RESPONSE_AUDIO_TRANSCRIPT_DONE: {
         const responseId = payload?.id ?? payload?.response_id
         if (responseId) {
           const text =
@@ -313,27 +330,27 @@ export class NavtalkSession {
         }
         break
       }
-      case 'realtime.response.function_call_arguments.done':
+      case NavTalkMessageType.REALTIME_RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE:
         this.handleFunctionCallArguments(payload)
         break
-      case 'realtime.response.audio.done':
+      case NavTalkMessageType.REALTIME_RESPONSE_AUDIO_DONE:
         this.handleAudioResponseComplete()
         break
-      case 'realtime.response.audio.delta':
+      case NavTalkMessageType.REALTIME_RESPONSE_AUDIO_DELTA:
         break
-      case 'webrtc.signaling.offer':
+      case NavTalkMessageType.WEB_RTC_OFFER:
         void this.handleOffer(payload)
         break
-      case 'webrtc.signaling.answer':
+      case NavTalkMessageType.WEB_RTC_ANSWER:
         this.handleAnswer(payload)
         break
-      case 'webrtc.signaling.iceCandidate':
+      case NavTalkMessageType.WEB_RTC_ICE_CANDIDATE:
         this.handleIceCandidate(payload)
         break
-      case 'realtime.session.gpu_full':
+      case NavTalkMessageType.SESSION_GPU_FULL:
         this.callbacks.onError?.('GPU resources are currently busy. Please try again later.')
         break
-      case 'realtime.session.insufficient_balance':
+      case NavTalkMessageType.SESSION_INSUFFICIENT_BALANCE:
         this.callbacks.onError?.('Account balance is insufficient. Please top up to continue.')
         break
       default:
@@ -341,54 +358,46 @@ export class NavtalkSession {
     }
   }
 
-  private sendSessionUpdate() {
+  private sendSessionConfig() {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       return
     }
 
-    const sessionConfig = {
-      type: 'session.update',
-      session: {
-        model: this.model,
-        character: this.characterName,
-        instructions: this.prompt,
-        turn_detection: {
-          type: 'server_vad',
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500,
-        },
-        voice: this.voice,
-        temperature: 1,
-        max_response_output_tokens: 4096,
-        modalities: ['text', 'audio'],
-        input_audio_format: 'pcm16',
-        output_audio_format: 'pcm16',
-        input_audio_transcription: {
-          model: 'whisper-1',
-        },
-        tools: [
-          {
-            type: 'function',
-            name: 'end_conversation',
-            description:
-              'Use this when the user says goodbye, wants to leave, or asks to end the interview so the system can hang up automatically after your final response.',
-            parameters: {
-              type: 'object',
-              properties: {
-                reason: {
-                  type: 'string',
-                  description: 'Brief explanation of why the call should end.',
-                },
+    const config = {
+      voice: this.voice,
+      prompt: this.prompt,
+      tools: [
+        {
+          type: 'function',
+          name: 'end_conversation',
+          description:
+            'Use this when the user says goodbye, wants to leave, or asks to end the interview so the system can hang up automatically after your final response.',
+          parameters: {
+            type: 'object',
+            properties: {
+              reason: {
+                type: 'string',
+                description: 'Brief explanation of why the call should end.',
               },
-              required: ['reason'],
             },
+            required: ['reason'],
           },
-        ],
-      },
+        },
+      ],
     }
 
-    this.socket.send(JSON.stringify(sessionConfig))
+    this.socket.send(
+      JSON.stringify({
+        type: NavTalkMessageType.REALTIME_INPUT_CONFIG,
+        data: { content: JSON.stringify(config) },
+      })
+    )
+  }
+
+  private sendSessionUpdate() {
+    // This function is no longer needed for configuration
+    // Configuration is now sent via sendSessionConfig in onopen
+    // Keep empty for backward compatibility
   }
 
   public requestAssistantResponse() {
@@ -397,7 +406,7 @@ export class NavtalkSession {
     }
 
     try {
-      this.socket.send(JSON.stringify({ type: 'response.create' }))
+      this.socket.send(JSON.stringify({ type: NavTalkMessageType.RESPONSE_CREATE }))
     } catch (error) {
       console.error('Failed to request assistant response', error)
     }
@@ -430,7 +439,7 @@ export class NavtalkSession {
             const chunk = base64PCM.slice(i, i + chunkSize)
             this.socket.send(
               JSON.stringify({
-                type: 'realtime.input_audio_buffer.append',
+                type: NavTalkMessageType.REALTIME_INPUT_AUDIO_BUFFER_APPEND,
                 data: { audio: chunk },
               })
             )
@@ -495,10 +504,14 @@ export class NavtalkSession {
   }
 
   private handleFunctionCallArguments(data: any) {
-    const name = typeof data?.name === 'string' ? data.name : ''
-    if (!name) {
+    const functionName =
+      typeof data?.function_name === 'string' ? data.function_name : (data?.name ?? '')
+    if (!functionName) {
       return
     }
+
+    const rawCallId = data?.call_id ?? data?.callId ?? data?.id
+    const callId = rawCallId != null ? String(rawCallId) : undefined
 
     let parsedArgs: any = {}
     if (typeof data?.arguments === 'string' && data.arguments.trim().length > 0) {
@@ -509,29 +522,23 @@ export class NavtalkSession {
       }
     }
 
-    switch (name) {
+    switch (functionName) {
       case 'end_conversation':
-        this.handleEndConversation(parsedArgs, data?.call_id)
+        this.handleEndConversation(parsedArgs, callId)
         break
       default:
         break
     }
   }
 
-  private handleEndConversation(args: any, callId?: string) {
+  private handleEndConversation(args: any, _callId?: string) {
     const reason =
       typeof args?.reason === 'string' && args.reason.trim().length > 0
         ? args.reason.trim()
         : 'User requested to end the conversation.'
-    this.pendingHangupReason = reason
 
-    if (callId) {
-      this.sendFunctionCallOutput(String(callId), {
-        action: 'end_conversation',
-        status: 'acknowledged',
-        reason,
-      })
-    }
+    this.callbacks.onAutoHangup?.(reason)
+    void this.stop()
   }
 
   private sendFunctionCallOutput(callId: string, output: Record<string, unknown> | string) {
@@ -542,7 +549,7 @@ export class NavtalkSession {
     const serializedOutput = typeof output === 'string' ? output : JSON.stringify(output)
 
     const payload = {
-      type: 'conversation.item.create',
+      type: NavTalkMessageType.CONVERSATION_ITEM_CREATE,
       item: {
         type: 'function_call_output',
         output: serializedOutput,
@@ -552,7 +559,7 @@ export class NavtalkSession {
 
     try {
       this.socket.send(JSON.stringify(payload))
-      this.socket.send(JSON.stringify({ type: 'response.create' }))
+      this.socket.send(JSON.stringify({ type: NavTalkMessageType.RESPONSE_CREATE }))
     } catch (error) {
       console.error('Failed to send function call output', error)
     }
