@@ -21,7 +21,6 @@ interface NavtalkSessionOptions extends NavtalkSessionCallbacks {
   license: string
   characterName: string
   voice: string
-  model: string
   baseUrl: string
   prompt: string
   videoElement?: HTMLVideoElement | null
@@ -68,7 +67,6 @@ export class NavtalkSession {
   private readonly voice: string
   private readonly baseUrl: string
   private readonly prompt: string
-  private readonly model: string
   private readonly callbacks: NavtalkSessionCallbacks
   private readonly videoElement?: HTMLVideoElement | null
 
@@ -89,7 +87,6 @@ export class NavtalkSession {
     this.license = options.license
     this.characterName = options.characterName
     this.voice = options.voice
-    this.model = options.model
     this.baseUrl = options.baseUrl
     this.prompt = options.prompt
     this.callbacks = options
@@ -133,7 +130,6 @@ export class NavtalkSession {
     const params = new URLSearchParams({
       license: this.license,
       name: this.characterName,
-      model: this.model,
     })
     const withParams = websocketUrl.includes('?') ? `${websocketUrl}&${params}` : `${websocketUrl}?${params}`
 
@@ -174,17 +170,6 @@ export class NavtalkSession {
       return this.baseUrl
     }
     return `wss://${this.baseUrl}/wss/v2/realtime-chat`
-  }
-
-  private getApiHost() {
-    if (this.baseUrl.startsWith('ws://') || this.baseUrl.startsWith('wss://')) {
-      try {
-        return new URL(this.baseUrl).host
-      } catch {
-        return this.baseUrl.replace(/^wss?:\/\//, '')
-      }
-    }
-    return this.baseUrl
   }
 
   private sendSignalingMessage(type: string, data: Record<string, unknown>) {
@@ -539,30 +524,6 @@ export class NavtalkSession {
 
     this.callbacks.onAutoHangup?.(reason)
     void this.stop()
-  }
-
-  private sendFunctionCallOutput(callId: string, output: Record<string, unknown> | string) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN || !callId) {
-      return
-    }
-
-    const serializedOutput = typeof output === 'string' ? output : JSON.stringify(output)
-
-    const payload = {
-      type: NavTalkMessageType.CONVERSATION_ITEM_CREATE,
-      item: {
-        type: 'function_call_output',
-        output: serializedOutput,
-        call_id: callId,
-      },
-    }
-
-    try {
-      this.socket.send(JSON.stringify(payload))
-      this.socket.send(JSON.stringify({ type: NavTalkMessageType.RESPONSE_CREATE }))
-    } catch (error) {
-      console.error('Failed to send function call output', error)
-    }
   }
 
   private handleAudioResponseComplete() {

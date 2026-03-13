@@ -87,7 +87,6 @@ const DEFAULT_CHARACTER_NAME = 'navtalk.Lauren'
 // ✒️ voice. Currently supported voices include: alloy, ash, ballad, cedar, coral, echo, marin, sage, shimmer, verse
 // You can check the specific voices on the official website: https://console.navtalk.ai/login#/playground/realtime_digital_human.
 const DEFAULT_VOICE = 'sage'
-const DEFAULT_MODEL = 'gpt-realtime'
 const DEFAULT_PROMPT = ACTIVE_LANGUAGE_PRESET.defaultPrompt
 const DEFAULT_BASE_URL = 'wss://transfer.navtalk.ai/wss/v2/realtime-chat'
 
@@ -97,8 +96,6 @@ export const NAVTALK_CHARACTER_NAME =
   import.meta.env.VITE_NAVTALK_CHARACTER_NAME?.trim() ?? DEFAULT_CHARACTER_NAME
 export const NAVTALK_VOICE =
   import.meta.env.VITE_NAVTALK_VOICE?.trim() ?? DEFAULT_VOICE
-export const NAVTALK_MODEL =
-  import.meta.env.VITE_NAVTALK_MODEL?.trim() ?? DEFAULT_MODEL
 export const NAVTALK_PROMPT =
   import.meta.env.VITE_NAVTALK_PROMPT?.trim() ?? DEFAULT_PROMPT
 export const NAVTALK_BASE_URL =
