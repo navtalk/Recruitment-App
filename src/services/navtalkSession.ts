@@ -19,7 +19,8 @@ export type NavtalkSessionStatus =
 
 interface NavtalkSessionOptions extends NavtalkSessionCallbacks {
   license: string
-  characterName: string
+  characterName: string  // Optional if avatarId is provided
+  avatarId?: string      // Optional: Direct avatar ID for precise lookup
   voice: string
   baseUrl: string
   prompt: string
@@ -28,6 +29,7 @@ interface NavtalkSessionOptions extends NavtalkSessionCallbacks {
 
 const NavTalkMessageType = {
   CONNECTED_SUCCESS: 'conversation.connected.success',
+  CONNECTED_WARNING: 'conversation.connected.warning',
   CONNECTED_FAIL: 'conversation.connected.fail',
   CONNECTED_CLOSE: 'conversation.connected.close',
   INSUFFICIENT_BALANCE: 'conversation.connected.insufficient_balance',
@@ -64,6 +66,7 @@ const ICE_CONFIGURATION: RTCConfiguration = {
 export class NavtalkSession {
   private readonly license: string
   private readonly characterName: string
+  private readonly avatarId?: string
   private readonly voice: string
   private readonly baseUrl: string
   private readonly prompt: string
@@ -86,6 +89,7 @@ export class NavtalkSession {
   constructor(options: NavtalkSessionOptions) {
     this.license = options.license
     this.characterName = options.characterName
+    this.avatarId = options.avatarId
     this.voice = options.voice
     this.baseUrl = options.baseUrl
     this.prompt = options.prompt
@@ -127,9 +131,10 @@ export class NavtalkSession {
 
   private initializeMainWebSocket() {
     const websocketUrl = this.buildWebsocketUrl()
+    // Use avatarId for precise lookup, fallback to name if not provided
     const params = new URLSearchParams({
       license: this.license,
-      name: this.characterName,
+      ...(this.avatarId ? { avatarId: this.avatarId } : { name: this.characterName }),
     })
     const withParams = websocketUrl.includes('?') ? `${websocketUrl}&${params}` : `${websocketUrl}?${params}`
 
@@ -259,6 +264,11 @@ export class NavtalkSession {
         if (Array.isArray(iceServers) && iceServers.length > 0) {
           this.configuration = { iceServers }
         }
+        break
+      }
+      case NavTalkMessageType.CONNECTED_WARNING: {
+        const warningMsg = data.message ?? payload?.message ?? 'Warning from server'
+        console.warn('[NavTalk Connection Warning]', warningMsg)
         break
       }
       case NavTalkMessageType.CONNECTED_FAIL:

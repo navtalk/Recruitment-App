@@ -101,6 +101,7 @@ import { NavtalkSession, type NavtalkSessionStatus } from '../services/navtalkSe
 import {
   NAVTALK_BASE_URL,
   NAVTALK_CHARACTER_NAME,
+  NAVTALK_AVATAR_ID,
   NAVTALK_LICENSE,
   NAVTALK_VOICE,
   NAVTALK_CLOSING_MESSAGE,
@@ -286,6 +287,7 @@ async function startSession() {
     session.value = new NavtalkSession({
       license: NAVTALK_LICENSE,
       characterName: props.job.characterName ?? NAVTALK_CHARACTER_NAME,
+      avatarId: NAVTALK_AVATAR_ID,
       voice: props.job.voice ?? NAVTALK_VOICE,
       baseUrl: NAVTALK_BASE_URL,
       prompt,

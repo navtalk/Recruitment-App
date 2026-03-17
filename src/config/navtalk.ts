@@ -94,6 +94,12 @@ export const NAVTALK_LICENSE =
   import.meta.env.VITE_NAVTALK_LICENSE?.trim() ?? DEFAULT_LICENSE
 export const NAVTALK_CHARACTER_NAME =
   import.meta.env.VITE_NAVTALK_CHARACTER_NAME?.trim() ?? DEFAULT_CHARACTER_NAME
+// ✒️ avatar ID (optional, recommended for precise lookup)
+// If set via VITE_NAVTALK_AVATAR_ID, avatarId takes priority over characterName for connection
+// Leave empty to use characterName for avatar lookup
+const DEFAULT_AVATAR_ID = ''
+export const NAVTALK_AVATAR_ID =
+  import.meta.env.VITE_NAVTALK_AVATAR_ID?.trim() ?? DEFAULT_AVATAR_ID
 export const NAVTALK_VOICE =
   import.meta.env.VITE_NAVTALK_VOICE?.trim() ?? DEFAULT_VOICE
 export const NAVTALK_PROMPT =
